@@ -13,29 +13,37 @@ serve(async (req) => {
   }
 
   try {
-    // Verificar que el header de autorización existe
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("No se proporcionó token de autorización");
-    }
-
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: { Authorization: authHeader },
+          headers: { Authorization: req.headers.get("Authorization")! },
         },
       }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      console.error("Error de autenticación:", authError);
-      throw new Error("Usuario no autenticado: " + (authError?.message || "Token inválido"));
+    // Extraer el user_id del JWT que ya fue verificado por Supabase
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("No se proporcionó token de autorización");
     }
 
-    console.log("Usuario autenticado:", user.id);
+    // Decodificar el JWT para obtener el user_id
+    const token = authHeader.replace("Bearer ", "");
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      throw new Error("Token inválido");
+    }
+    
+    const payload = JSON.parse(atob(parts[1]));
+    const userId = payload.sub;
+
+    if (!userId) {
+      throw new Error("Usuario no autenticado");
+    }
+
+    console.log("Usuario autenticado:", userId);
 
     const { pdf, fileName } = await req.json();
 
@@ -76,7 +84,7 @@ serve(async (req) => {
     const { data: diet, error: insertError } = await supabaseClient
       .from("diets")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         file_name: fileName,
         content: extractedText,
       })
