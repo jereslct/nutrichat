@@ -75,34 +75,38 @@ const Upload = () => {
 
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target?.result as string;
-        const base64Content = base64.split(",")[1];
+      // Convertir FileReader a Promise
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Error leyendo el archivo"));
+        reader.readAsDataURL(file);
+      });
 
-        const { data, error } = await supabase.functions.invoke("upload-pdf", {
-          body: { 
-            pdf: base64Content,
-            fileName: file.name,
-          },
-        });
+      const base64Content = base64.split(",")[1];
 
-        if (error) throw error;
+      const { data, error } = await supabase.functions.invoke("upload-pdf", {
+        body: { 
+          pdf: base64Content,
+          fileName: file.name,
+        },
+      });
 
-        if (data.error) {
-          throw new Error(data.error);
-        }
+      if (error) throw error;
 
-        toast({
-          title: "¡Éxito!",
-          description: "Tu plan nutricional ha sido procesado correctamente",
-        });
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
-        await checkExistingDiet(session.user.id);
-        setFile(null);
-      };
-      reader.readAsDataURL(file);
+      toast({
+        title: "¡Éxito!",
+        description: "Tu plan nutricional ha sido procesado correctamente",
+      });
+
+      await checkExistingDiet(session.user.id);
+      setFile(null);
     } catch (error: any) {
+      console.error("Error uploading PDF:", error);
       toast({
         title: "Error",
         description: error.message || "No se pudo procesar el PDF",
