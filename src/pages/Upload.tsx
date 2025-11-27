@@ -100,7 +100,17 @@ const Upload = () => {
       setUploadProgress(60);
       setUploadStatus("Procesando con IA...");
 
+      // Obtener el token de sesión actual
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession?.access_token) {
+        throw new Error("No hay sesión activa. Por favor, inicia sesión nuevamente.");
+      }
+
       const { data, error } = await supabase.functions.invoke("upload-pdf", {
+        headers: {
+          Authorization: `Bearer ${currentSession.access_token}`,
+        },
         body: { 
           pdf: base64Content,
           fileName: file.name,
