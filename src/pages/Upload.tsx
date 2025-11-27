@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Upload as UploadIcon, FileText, LogOut, Loader2, MessageSquare } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
@@ -11,6 +12,8 @@ const Upload = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("");
   const [existingDiet, setExistingDiet] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -74,7 +77,13 @@ const Upload = () => {
     if (!file || !session) return;
 
     setUploading(true);
+    setUploadProgress(0);
+    setUploadStatus("Leyendo archivo...");
+    
     try {
+      // Simular progreso de lectura
+      setUploadProgress(20);
+      
       // Convertir FileReader a Promise
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -83,7 +92,13 @@ const Upload = () => {
         reader.readAsDataURL(file);
       });
 
+      setUploadProgress(40);
+      setUploadStatus("Extrayendo contenido del PDF...");
+
       const base64Content = base64.split(",")[1];
+
+      setUploadProgress(60);
+      setUploadStatus("Procesando con IA...");
 
       const { data, error } = await supabase.functions.invoke("upload-pdf", {
         body: { 
@@ -98,15 +113,29 @@ const Upload = () => {
         throw new Error(data.error);
       }
 
+      setUploadProgress(90);
+      setUploadStatus("Guardando en la base de datos...");
+
+      await checkExistingDiet(session.user.id);
+      
+      setUploadProgress(100);
+      setUploadStatus("¡Completado!");
+
       toast({
         title: "¡Éxito!",
         description: "Tu plan nutricional ha sido procesado correctamente",
       });
 
-      await checkExistingDiet(session.user.id);
       setFile(null);
+      
+      // Reset progress after a delay
+      setTimeout(() => {
+        setUploadProgress(0);
+        setUploadStatus("");
+      }, 2000);
     } catch (error: any) {
       console.error("Error uploading PDF:", error);
+      setUploadStatus("Error en la carga");
       toast({
         title: "Error",
         description: error.message || "No se pudo procesar el PDF",
@@ -170,6 +199,16 @@ const Upload = () => {
                   )}
                 </label>
               </div>
+              {uploading && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">{uploadStatus}</span>
+                    <span className="font-medium">{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="h-2" />
+                </div>
+              )}
+              
               <Button
                 onClick={handleUpload}
                 disabled={!file || uploading}
