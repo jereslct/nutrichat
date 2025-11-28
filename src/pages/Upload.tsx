@@ -209,7 +209,7 @@ const Upload = () => {
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            NutriChat AI
+            FoodTalk
           </h1>
           <Button variant="outline" onClick={handleLogout} size="sm">
             <LogOut className="mr-2 h-4 w-4" />
