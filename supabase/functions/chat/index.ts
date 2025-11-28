@@ -18,6 +18,24 @@ serve(async (req) => {
       throw new Error("Usuario no autenticado: falta header de autorización");
     }
 
+    // Extraer el token JWT del header
+    const token = authHeader.replace("Bearer ", "");
+    
+    // Decodificar el JWT para obtener el user_id (el payload está en base64)
+    const parts = token.split(".");
+    if (parts.length !== 3) {
+      throw new Error("Token JWT inválido");
+    }
+    
+    const payload = JSON.parse(atob(parts[1]));
+    const userId = payload.sub;
+    
+    if (!userId) {
+      throw new Error("Usuario no autenticado: token sin user_id");
+    }
+
+    console.log("Usuario autenticado:", userId);
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -27,14 +45,6 @@ serve(async (req) => {
         },
       }
     );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      console.error("Error de autenticación:", authError);
-      throw new Error("Usuario no autenticado: " + (authError?.message || "Auth session missing!"));
-    }
-
-    console.log("Usuario autenticado:", user.id);
 
     const { message, dietId } = await req.json();
 
@@ -49,7 +59,7 @@ serve(async (req) => {
       .from("diets")
       .select("*")
       .eq("id", dietId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .single();
 
     if (dietError || !diet) {
@@ -61,7 +71,7 @@ serve(async (req) => {
       .from("chat_messages")
       .select("role, content")
       .eq("diet_id", dietId)
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(10);
 
