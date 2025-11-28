@@ -98,5 +98,32 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    /* Mejoras para móviles */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* Soporte para área segura en móviles (notch, home indicator) */
+  .safe-bottom {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  
+  /* Prevenir zoom en inputs en iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea {
+    font-size: 16px;
+  }
+  
+  /* Mejorar el scrolling en iOS */
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  @supports (height: 100dvh) {
+    html, body {
+      height: 100dvh;
+    }
   }
 }
