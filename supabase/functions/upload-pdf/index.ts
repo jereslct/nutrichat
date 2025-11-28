@@ -78,7 +78,13 @@ serve(async (req) => {
         "Se recomienda revisar el PDF original para detalles completos.";
     }
 
-    console.log("Texto extraído, longitud:", extractedText.length);
+    // Limpiar el texto: remover null bytes y otros caracteres problemáticos para PostgreSQL
+    extractedText = extractedText
+      .replace(/\u0000/g, '') // Remover null bytes
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remover otros caracteres de control
+      .trim();
+
+    console.log("Texto extraído y limpiado, longitud:", extractedText.length);
 
     // Guardar en la base de datos
     const { data: diet, error: insertError } = await supabaseClient
