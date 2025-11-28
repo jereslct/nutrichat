@@ -13,20 +13,28 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Usuario no autenticado: falta header de autorización");
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     if (authError || !user) {
-      throw new Error("Usuario no autenticado");
+      console.error("Error de autenticación:", authError);
+      throw new Error("Usuario no autenticado: " + (authError?.message || "Auth session missing!"));
     }
+
+    console.log("Usuario autenticado:", user.id);
 
     const { message, dietId } = await req.json();
 
