@@ -23,9 +23,20 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        navigate("/upload");
+        // Verificar si el usuario tiene un plan cargado
+        const { data: diets } = await supabase
+          .from("diets")
+          .select("id")
+          .eq("user_id", session.user.id)
+          .limit(1);
+        
+        if (diets && diets.length > 0) {
+          navigate("/chat");
+        } else {
+          navigate("/upload");
+        }
       }
     });
   }, [navigate]);
@@ -43,7 +54,7 @@ const Auth = () => {
       }
 
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: authData, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -61,11 +72,23 @@ const Auth = () => {
           return;
         }
 
+        // Verificar si el usuario tiene un plan cargado
+        const { data: diets } = await supabase
+          .from("diets")
+          .select("id")
+          .eq("user_id", authData.user.id)
+          .limit(1);
+
         toast({
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de vuelta",
         });
-        navigate("/upload");
+
+        if (diets && diets.length > 0) {
+          navigate("/chat");
+        } else {
+          navigate("/upload");
+        }
       } else {
         const { error } = await supabase.auth.signUp({
           email,
