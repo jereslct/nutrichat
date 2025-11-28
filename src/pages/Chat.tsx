@@ -102,6 +102,9 @@ const Chat = () => {
           message: input,
           dietId: dietId,
         },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
