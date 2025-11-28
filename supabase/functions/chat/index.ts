@@ -117,48 +117,60 @@ Instrucciones:
       });
     }
 
-    // Obtener la API key de Google AI Studio
-    const GOOGLE_API_KEY = Deno.env.get("FoodTalkKey");
-    if (!GOOGLE_API_KEY) {
-      throw new Error("API key de Google AI Studio no configurada");
+    // Obtener la API key de Lovable AI
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("API key de Lovable AI no configurada");
     }
 
-    console.log("Llamando a Google Gemini API...");
+    console.log("Llamando a Lovable AI...");
 
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GOOGLE_API_KEY}`,
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contents: contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000,
-          },
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content: systemPrompt
+            },
+            ...contents.map(c => ({
+              role: c.role === "model" ? "assistant" : c.role,
+              content: c.parts[0].text
+            }))
+          ],
+          temperature: 0.7,
+          max_tokens: 1000,
         }),
       }
     );
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("Error de Google Gemini API:", aiResponse.status, errorText);
+      console.error("Error de Lovable AI:", aiResponse.status, errorText);
       
       if (aiResponse.status === 429) {
         throw new Error("Límite de uso excedido. Por favor intenta de nuevo más tarde.");
       }
-      throw new Error("Error llamando a Google Gemini API");
+      if (aiResponse.status === 402) {
+        throw new Error("Fondos insuficientes. Por favor agrega créditos en tu workspace de Lovable.");
+      }
+      throw new Error("Error llamando a Lovable AI");
     }
 
     const aiData = await aiResponse.json();
     
-    // Extraer la respuesta de la estructura de Gemini
-    const assistantResponse = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Extraer la respuesta del formato OpenAI
+    const assistantResponse = aiData.choices?.[0]?.message?.content;
     
     if (!assistantResponse) {
-      console.error("Respuesta inesperada de Gemini:", JSON.stringify(aiData));
+      console.error("Respuesta inesperada de Lovable AI:", JSON.stringify(aiData));
       throw new Error("Respuesta inválida de la IA");
     }
 
