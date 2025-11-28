@@ -53,29 +53,57 @@ serve(async (req) => {
 
     console.log("Procesando PDF:", fileName);
 
-    // Decodificar el PDF desde base64
-    const pdfBuffer = Uint8Array.from(atob(pdf), c => c.charCodeAt(0));
-
-    // Parsear PDF usando pdf.js de forma simple
-    // Para producción, considera usar una librería más robusta
-    const textDecoder = new TextDecoder();
-    let pdfText = textDecoder.decode(pdfBuffer);
-    
-    // Extraer texto visible de forma básica
-    // Esta es una extracción simple; en producción usa pdf-parse o similar
-    const textMatches = pdfText.match(/\(([^)]+)\)/g);
-    let extractedText = "";
-    if (textMatches) {
-      extractedText = textMatches
-        .map(match => match.slice(1, -1))
-        .join(" ")
-        .replace(/\\[0-9]{3}/g, " ")
-        .trim();
+    // Usar Lovable AI para extraer el contenido del PDF de manera confiable
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("API key de Lovable AI no configurada");
     }
 
+    console.log("Extrayendo contenido del PDF con Lovable AI...");
+
+    const aiResponse = await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "text",
+                  text: "Extrae TODO el texto completo de este PDF de plan nutricional. Incluye todos los detalles, tablas, listas de alimentos, porciones, y cualquier información relevante. Mantén la estructura y formato original tanto como sea posible. Responde SOLO con el texto extraído, sin agregar comentarios adicionales."
+                },
+                {
+                  type: "image_url",
+                  image_url: {
+                    url: `data:application/pdf;base64,${pdf}`
+                  }
+                }
+              ]
+            }
+          ],
+          max_tokens: 16000,
+        }),
+      }
+    );
+
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error("Error de Lovable AI:", aiResponse.status, errorText);
+      throw new Error("Error extrayendo contenido del PDF");
+    }
+
+    const aiData = await aiResponse.json();
+    let extractedText = aiData.choices?.[0]?.message?.content;
+
     if (!extractedText || extractedText.length < 50) {
-      extractedText = "Plan nutricional - contenido extraído del PDF. " + 
-        "Se recomienda revisar el PDF original para detalles completos.";
+      throw new Error("No se pudo extraer contenido válido del PDF");
     }
 
     // Limpiar el texto: remover null bytes y otros caracteres problemáticos para PostgreSQL
