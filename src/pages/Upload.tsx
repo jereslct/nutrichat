@@ -5,8 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Upload as UploadIcon, FileText, LogOut, Loader2, MessageSquare } from "lucide-react";
+import { Upload as UploadIcon, FileText, LogOut, Loader2, MessageSquare, Trash2 } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Upload = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -153,6 +164,41 @@ const Upload = () => {
     }
   };
 
+  const handleDeleteDiet = async () => {
+    if (!existingDiet || !session) return;
+
+    try {
+      const { error } = await supabase
+        .from("diets")
+        .delete()
+        .eq("id", existingDiet.id)
+        .eq("user_id", session.user.id);
+
+      if (error) throw error;
+
+      // También eliminar los mensajes del chat asociados
+      await supabase
+        .from("chat_messages")
+        .delete()
+        .eq("diet_id", existingDiet.id)
+        .eq("user_id", session.user.id);
+
+      toast({
+        title: "Plan eliminado",
+        description: "Tu plan nutricional ha sido eliminado correctamente",
+      });
+
+      setExistingDiet(null);
+    } catch (error: any) {
+      console.error("Error deleting diet:", error);
+      toast({
+        title: "Error",
+        description: error.message || "No se pudo eliminar el plan",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
@@ -262,6 +308,30 @@ const Upload = () => {
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Iniciar Chat
                 </Button>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Eliminar Plan
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta acción eliminará permanentemente tu plan nutricional y todo el historial de chat asociado. 
+                        No podrás recuperar esta información.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteDiet} className="bg-destructive hover:bg-destructive/90">
+                        Eliminar
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardContent>
             </Card>
           )}
