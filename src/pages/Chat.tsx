@@ -143,7 +143,7 @@ const Chat = () => {
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            NutriChat AI
+            FoodTalk
           </h1>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navigate("/upload")} size="sm">
@@ -163,7 +163,7 @@ const Chat = () => {
           {messages.length === 0 ? (
             <Card className="p-8 text-center bg-gradient-to-br from-card to-secondary/20 border-border/50">
               <Bot className="h-12 w-12 mx-auto mb-4 text-primary" />
-              <h2 className="text-xl font-semibold mb-2">¡Bienvenido a NutriChat!</h2>
+              <h2 className="text-xl font-semibold mb-2">¡Bienvenido a FoodTalk!</h2>
               <p className="text-muted-foreground">
                 Hazme cualquier pregunta sobre tu plan nutricional
               </p>
