@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Upload as UploadIcon, FileText, LogOut, Loader2, MessageSquare, Trash2 } from "lucide-react";
+import { Upload as UploadIcon, FileText, LogOut, Loader2, MessageSquare, Trash2, UserCircle } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import {
   AlertDialog,
@@ -211,10 +211,22 @@ const Upload = () => {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             FoodTalk
           </h1>
-          <Button variant="outline" onClick={handleLogout} size="sm">
-            <LogOut className="mr-2 h-4 w-4" />
-            Cerrar sesión
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/profile")} size="sm">
+              <UserCircle className="mr-2 h-4 w-4" />
+              Perfil
+            </Button>
+            {existingDiet && (
+              <Button variant="outline" onClick={() => navigate("/chat")} size="sm">
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Chat
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleLogout} size="sm">
+              <LogOut className="mr-2 h-4 w-4" />
+              Cerrar sesión
+            </Button>
+          </div>
         </div>
       </header>
 
