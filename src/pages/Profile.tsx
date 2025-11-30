@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AvatarCropDialog } from "@/components/AvatarCropDialog";
 
 interface Diet {
   id: string;
@@ -35,6 +36,8 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showCropDialog, setShowCropDialog] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -95,9 +98,9 @@ const Profile = () => {
     }
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !session) return;
+    if (!file) return;
 
     // Validar tipo de archivo
     const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -120,6 +123,18 @@ const Profile = () => {
       return;
     }
 
+    // Crear preview para el crop
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImageSrc(reader.result as string);
+      setShowCropDialog(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async (croppedImage: Blob) => {
+    if (!session) return;
+
     setIsUploading(true);
 
     try {
@@ -133,14 +148,13 @@ const Profile = () => {
         }
       }
 
-      // Subir nuevo avatar
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Math.random()}.${fileExt}`;
+      // Subir nuevo avatar croppeado
+      const fileName = `${Math.random()}.jpg`;
       const filePath = `${session.user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(filePath, file);
+        .upload(filePath, croppedImage);
 
       if (uploadError) throw uploadError;
 
@@ -172,6 +186,12 @@ const Profile = () => {
       });
     } finally {
       setIsUploading(false);
+      setShowCropDialog(false);
+      setSelectedImageSrc("");
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -231,8 +251,22 @@ const Profile = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-br from-background via-secondary to-background">
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm shrink-0">
+    <>
+      <AvatarCropDialog
+        open={showCropDialog}
+        imageSrc={selectedImageSrc}
+        onClose={() => {
+          setShowCropDialog(false);
+          setSelectedImageSrc("");
+          if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+          }
+        }}
+        onCropComplete={handleCropComplete}
+      />
+
+      <div className="min-h-[100dvh] flex flex-col bg-gradient-to-br from-background via-secondary to-background">
+        <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm shrink-0">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center">
           <Button
             variant="ghost"
@@ -413,6 +447,7 @@ const Profile = () => {
         </div>
       </main>
     </div>
+    </>
   );
 };
 
