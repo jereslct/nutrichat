@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Send, LogOut, Upload, Loader2, Bot, User } from "lucide-react";
+import { Send, LogOut, Upload, Loader2, Bot, User as UserIcon, UserCircle } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 
 interface Message {
@@ -148,6 +148,15 @@ const Chat = () => {
           <div className="flex gap-1 sm:gap-2">
             <Button 
               variant="outline" 
+              onClick={() => navigate("/profile")} 
+              size="sm"
+              className="px-2 sm:px-3"
+            >
+              <UserCircle className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Perfil</span>
+            </Button>
+            <Button 
+              variant="outline" 
               onClick={() => navigate("/upload")} 
               size="sm"
               className="px-2 sm:px-3"
@@ -200,7 +209,7 @@ const Chat = () => {
                 </Card>
                 {msg.role === "user" && (
                   <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-accent/10 flex items-center justify-center">
-                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
+                    <UserIcon className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
                   </div>
                 )}
               </div>
