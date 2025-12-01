@@ -5,3 +5,12 @@ verify_jwt = true
 
 [functions.chat]
 verify_jwt = true
+
+[functions.get-doctor-patients]
+verify_jwt = true
+
+[functions.generate-patient-summary]
+verify_jwt = true
+
+[functions.create-patient-invitation]
+verify_jwt = true
