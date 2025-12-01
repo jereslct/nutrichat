@@ -17,7 +17,7 @@ export type Database = {
       chat_messages: {
         Row: {
           content: string
-          created_at: string
+          created_at: string | null
           diet_id: string | null
           id: string
           role: string
@@ -25,7 +25,7 @@ export type Database = {
         }
         Insert: {
           content: string
-          created_at?: string
+          created_at?: string | null
           diet_id?: string | null
           id?: string
           role: string
@@ -33,7 +33,7 @@ export type Database = {
         }
         Update: {
           content?: string
-          created_at?: string
+          created_at?: string | null
           diet_id?: string | null
           id?: string
           role?: string
@@ -47,71 +47,128 @@ export type Database = {
             referencedRelation: "diets"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "chat_messages_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       diets: {
         Row: {
-          content: string
-          created_at: string
+          created_at: string | null
           file_name: string
+          file_url: string | null
           id: string
-          updated_at: string
+          pdf_text: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
-          content: string
-          created_at?: string
+          created_at?: string | null
           file_name: string
+          file_url?: string | null
           id?: string
-          updated_at?: string
+          pdf_text?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
-          content?: string
-          created_at?: string
+          created_at?: string | null
           file_name?: string
+          file_url?: string | null
           id?: string
-          updated_at?: string
+          pdf_text?: string | null
+          updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "diets_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      doctor_patients: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string
+          doctor_id: string
+          id: string
+          invitation_code: string | null
+          patient_id: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string
+          doctor_id: string
+          id?: string
+          invitation_code?: string | null
+          patient_id?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string
+          doctor_id?: string
+          id?: string
+          invitation_code?: string | null
+          patient_id?: string | null
+        }
+        Relationships: []
+      }
+      patient_summaries: {
+        Row: {
+          chat_messages_analyzed: number | null
+          doctor_id: string
+          generated_at: string | null
+          id: string
+          key_concerns: Json | null
+          last_chat_date: string | null
+          patient_id: string
+          summary_text: string
+          topics: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          chat_messages_analyzed?: number | null
+          doctor_id: string
+          generated_at?: string | null
+          id?: string
+          key_concerns?: Json | null
+          last_chat_date?: string | null
+          patient_id: string
+          summary_text: string
+          topics?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          chat_messages_analyzed?: number | null
+          doctor_id?: string
+          generated_at?: string | null
+          id?: string
+          key_concerns?: Json | null
+          last_chat_date?: string | null
+          patient_id?: string
+          summary_text?: string
+          topics?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
           avatar_url: string | null
-          created_at: string
+          created_at: string | null
           full_name: string | null
           id: string
-          updated_at: string
+          role: string
+          updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
-          created_at?: string
+          created_at?: string | null
           full_name?: string | null
           id: string
-          updated_at?: string
+          role?: string
+          updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
-          created_at?: string
+          created_at?: string | null
           full_name?: string | null
           id?: string
-          updated_at?: string
+          role?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -120,7 +177,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_invitation_code: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
