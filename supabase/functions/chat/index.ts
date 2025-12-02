@@ -79,7 +79,7 @@ serve(async (req) => {
     const systemPrompt = `Eres un asistente nutricional experto y amigable. Tu rol es ayudar al usuario a entender su plan nutricional y responder preguntas sobre él.
 
 PLAN NUTRICIONAL DEL USUARIO:
-${diet.content}
+${diet.pdf_text}
 
 Instrucciones:
 - Responde de forma clara, concisa y profesional
