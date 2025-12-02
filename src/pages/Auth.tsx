@@ -27,7 +27,19 @@ const Auth = () => {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        // Verificar si el usuario tiene un plan cargado
+        // Check user role first
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (roleData?.role === "doctor") {
+          navigate("/dashboard");
+          return;
+        }
+
+        // For patients, check if they have a diet loaded
         const { data: diets } = await supabase
           .from("diets")
           .select("id")
@@ -74,22 +86,33 @@ const Auth = () => {
           return;
         }
 
-        // Verificar si el usuario tiene un plan cargado
-        const { data: diets } = await supabase
-          .from("diets")
-          .select("id")
+        // Check user role
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
           .eq("user_id", authData.user.id)
-          .limit(1);
+          .single();
 
         toast({
           title: "Inicio de sesión exitoso",
           description: "Bienvenido de vuelta",
         });
 
-        if (diets && diets.length > 0) {
-          navigate("/chat");
+        if (roleData?.role === "doctor") {
+          navigate("/dashboard");
         } else {
-          navigate("/upload");
+          // For patients, check if they have a diet loaded
+          const { data: diets } = await supabase
+            .from("diets")
+            .select("id")
+            .eq("user_id", authData.user.id)
+            .limit(1);
+
+          if (diets && diets.length > 0) {
+            navigate("/chat");
+          } else {
+            navigate("/upload");
+          }
         }
       } else {
         const { error } = await supabase.auth.signUp({
@@ -121,7 +144,13 @@ const Auth = () => {
           title: "Registro exitoso",
           description: "Tu cuenta ha sido creada. Redirigiendo...",
         });
-        navigate("/upload");
+        
+        // Redirect based on role
+        if (role === "doctor") {
+          navigate("/dashboard");
+        } else {
+          navigate("/upload");
+        }
       }
     } catch (error) {
       if (error instanceof z.ZodError) {

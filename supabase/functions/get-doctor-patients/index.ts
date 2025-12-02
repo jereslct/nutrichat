@@ -51,37 +51,43 @@ serve(async (req) => {
     const search = url.searchParams.get('search') || '';
     const offset = (page - 1) * limit;
 
+    // Get service role client for accessing all data
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Obtener pacientes del médico
-    const { data: relationships, error: relError } = await supabaseClient
+    const { data: relationships, error: relError } = await serviceClient
       .from('doctor_patients')
-      .select(`
-        id,
-        assigned_at,
-        patient_id,
-        profiles!doctor_patients_patient_id_fkey (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
+      .select('id, assigned_at, patient_id')
       .eq('doctor_id', user.id)
+      .not('patient_id', 'is', null)
       .order('assigned_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (relError) throw relError;
 
-    const { count } = await supabaseClient
+    const { count } = await serviceClient
       .from('doctor_patients')
       .select('*', { count: 'exact', head: true })
-      .eq('doctor_id', user.id);
+      .eq('doctor_id', user.id)
+      .not('patient_id', 'is', null);
 
     // Enriquecer datos de cada paciente
     const patientsData = await Promise.all(
       (relationships || []).map(async (rel: any) => {
         const patientId = rel.patient_id;
 
+        // Get patient profile
+        const { data: profile } = await serviceClient
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .eq('id', patientId)
+          .single();
+
         // Última actividad en chat
-        const { data: lastMessage } = await supabaseClient
+        const { data: lastMessage } = await serviceClient
           .from('chat_messages')
           .select('created_at')
           .eq('user_id', patientId)
@@ -90,13 +96,13 @@ serve(async (req) => {
           .maybeSingle();
 
         // Total de mensajes
-        const { count: messageCount } = await supabaseClient
+        const { count: messageCount } = await serviceClient
           .from('chat_messages')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', patientId);
 
         // Verificar si tiene dieta
-        const { data: diet } = await supabaseClient
+        const { data: diet } = await serviceClient
           .from('diets')
           .select('id')
           .eq('user_id', patientId)
@@ -104,9 +110,9 @@ serve(async (req) => {
           .maybeSingle();
 
         return {
-          id: rel.profiles.id,
-          full_name: rel.profiles.full_name,
-          avatar_url: rel.profiles.avatar_url,
+          id: profile?.id || patientId,
+          full_name: profile?.full_name || null,
+          avatar_url: profile?.avatar_url || null,
           last_activity: lastMessage?.created_at || null,
           total_messages: messageCount || 0,
           has_diet: !!diet,
