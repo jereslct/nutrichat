@@ -120,7 +120,7 @@ serve(async (req) => {
       .insert({
         user_id: userId,
         file_name: fileName,
-        content: extractedText,
+        pdf_text: extractedText,
       })
       .select()
       .single();
