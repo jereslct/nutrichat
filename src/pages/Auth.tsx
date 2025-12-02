@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { Leaf, Loader2 } from "lucide-react";
+import { Leaf, Loader2, User, Stethoscope } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Email inválido").max(255);
@@ -19,6 +20,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<"patient" | "doctor">("patient");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -97,6 +99,7 @@ const Auth = () => {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
               full_name: fullName,
+              role: role,
             },
           },
         });
@@ -158,19 +161,59 @@ const Auth = () => {
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Nombre completo</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="Juan Pérez"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required={!isLogin}
-                  disabled={loading}
-                  className="transition-all"
-                />
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Nombre completo</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Juan Pérez"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required={!isLogin}
+                    disabled={loading}
+                    className="transition-all"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label>Tipo de cuenta</Label>
+                  <RadioGroup
+                    value={role}
+                    onValueChange={(value) => setRole(value as "patient" | "doctor")}
+                    className="grid grid-cols-2 gap-3"
+                    disabled={loading}
+                  >
+                    <div>
+                      <RadioGroupItem
+                        value="patient"
+                        id="patient"
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor="patient"
+                        className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all"
+                      >
+                        <User className="mb-2 h-6 w-6" />
+                        <span className="text-sm font-medium">Paciente</span>
+                      </Label>
+                    </div>
+                    <div>
+                      <RadioGroupItem
+                        value="doctor"
+                        id="doctor"
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor="doctor"
+                        className="flex flex-col items-center justify-center rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 cursor-pointer transition-all"
+                      >
+                        <Stethoscope className="mb-2 h-6 w-6" />
+                        <span className="text-sm font-medium">Doctor</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
