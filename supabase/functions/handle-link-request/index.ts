@@ -1,0 +1,166 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'No autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const body = await req.json();
+    const { action, target_id, request_id } = body;
+
+    // Get user's role
+    const { data: userData } = await supabaseClient
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', user.id)
+      .single();
+
+    const userRole = userData?.role;
+
+    // Get service role client
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Handle different actions
+    switch (action) {
+      case 'send_request': {
+        // Create a new link request
+        const { error: insertError } = await serviceClient
+          .from('link_requests')
+          .insert({
+            requester_id: user.id,
+            target_id: target_id,
+            requester_role: userRole,
+            status: 'pending',
+          });
+
+        if (insertError) {
+          if (insertError.code === '23505') {
+            return new Response(
+              JSON.stringify({ error: 'Ya existe una solicitud pendiente' }),
+              { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          throw insertError;
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Solicitud enviada correctamente' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'accept_request': {
+        // Get the request
+        const { data: request, error: reqError } = await serviceClient
+          .from('link_requests')
+          .select('*')
+          .eq('id', request_id)
+          .eq('target_id', user.id)
+          .eq('status', 'pending')
+          .single();
+
+        if (reqError || !request) {
+          return new Response(
+            JSON.stringify({ error: 'Solicitud no encontrada' }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Determine doctor and patient IDs
+        const doctorId = request.requester_role === 'doctor' ? request.requester_id : user.id;
+        const patientId = request.requester_role === 'patient' ? request.requester_id : user.id;
+
+        // Create doctor-patient relationship
+        const { error: relError } = await serviceClient
+          .from('doctor_patients')
+          .insert({
+            doctor_id: doctorId,
+            patient_id: patientId,
+            assigned_by: 'mutual_request',
+          });
+
+        if (relError && relError.code !== '23505') throw relError;
+
+        // Update request status
+        await serviceClient
+          .from('link_requests')
+          .update({ status: 'accepted' })
+          .eq('id', request_id);
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Solicitud aceptada' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'reject_request': {
+        await serviceClient
+          .from('link_requests')
+          .update({ status: 'rejected' })
+          .eq('id', request_id)
+          .eq('target_id', user.id);
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Solicitud rechazada' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'cancel_request': {
+        await serviceClient
+          .from('link_requests')
+          .delete()
+          .eq('id', request_id)
+          .eq('requester_id', user.id)
+          .eq('status', 'pending');
+
+        return new Response(
+          JSON.stringify({ success: true, message: 'Solicitud cancelada' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      default:
+        return new Response(
+          JSON.stringify({ error: 'Acción no válida' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
