@@ -25,7 +25,6 @@ import {
 import {
   Leaf,
   Search,
-  UserPlus,
   Users,
   MessageSquare,
   Clock,
@@ -34,6 +33,8 @@ import {
   User,
   Loader2,
 } from "lucide-react";
+import { LinkRequestsNotification } from "@/components/LinkRequestsNotification";
+import { AllPatientsDialog } from "@/components/AllPatientsDialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface Patient {
@@ -184,31 +185,35 @@ const DoctorDashboard = () => {
             </div>
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                    {getInitials(profile?.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden md:inline text-sm font-medium">
-                  {profile?.full_name || "Doctor"}
-                </span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate("/profile")}>
-                <User className="mr-2 h-4 w-4" />
-                Perfil
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Cerrar sesión
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex items-center gap-2">
+            <LinkRequestsNotification onUpdate={fetchPatients} />
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={profile?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                      {getInitials(profile?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden md:inline text-sm font-medium">
+                    {profile?.full_name || "Doctor"}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <User className="mr-2 h-4 w-4" />
+                  Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </nav>
 
@@ -226,10 +231,7 @@ const DoctorDashboard = () => {
               Gestiona tus pacientes y revisa su progreso
             </p>
           </div>
-          <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Invitar Paciente
-          </Button>
+          <AllPatientsDialog onUpdate={fetchPatients} />
         </div>
 
         {/* Stats Cards */}
@@ -317,10 +319,7 @@ const DoctorDashboard = () => {
                     : "Invita a tu primer paciente para comenzar"}
                 </p>
                 {!searchTerm && (
-                  <Button className="bg-gradient-to-r from-primary to-accent hover:opacity-90">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Invitar Paciente
-                  </Button>
+                  <AllPatientsDialog onUpdate={fetchPatients} />
                 )}
               </CardContent>
             </Card>

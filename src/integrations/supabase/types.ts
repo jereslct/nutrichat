@@ -106,6 +106,39 @@ export type Database = {
         }
         Relationships: []
       }
+      link_requests: {
+        Row: {
+          created_at: string
+          id: string
+          invitation_code: string | null
+          requester_id: string
+          requester_role: string
+          status: string
+          target_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitation_code?: string | null
+          requester_id: string
+          requester_role: string
+          status?: string
+          target_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitation_code?: string | null
+          requester_id?: string
+          requester_role?: string
+          status?: string
+          target_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       patient_summaries: {
         Row: {
           chat_messages_analyzed: number | null

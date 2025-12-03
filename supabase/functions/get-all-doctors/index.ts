@@ -1,0 +1,116 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'No autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verificar que el usuario es paciente
+    const { data: userData } = await supabaseClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (userData?.role !== 'patient') {
+      return new Response(
+        JSON.stringify({ error: 'Solo pacientes pueden acceder' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get service role client for accessing all data
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Obtener todos los doctores del sistema
+    const { data: allDoctors, error: doctorsError } = await serviceClient
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .eq('role', 'doctor')
+      .order('full_name', { ascending: true });
+
+    if (doctorsError) throw doctorsError;
+
+    // Obtener relación actual del paciente
+    const { data: existingRelation } = await serviceClient
+      .from('doctor_patients')
+      .select('doctor_id')
+      .eq('patient_id', user.id)
+      .maybeSingle();
+
+    // Obtener solicitudes pendientes
+    const { data: pendingRequests } = await serviceClient
+      .from('link_requests')
+      .select('*')
+      .or(`requester_id.eq.${user.id},target_id.eq.${user.id}`)
+      .eq('status', 'pending');
+
+    // Enriquecer datos de doctores
+    const doctorsData = (allDoctors || []).map((doctor: any) => {
+      const isLinked = existingRelation?.doctor_id === doctor.id;
+
+      const pendingRequest = (pendingRequests || []).find(
+        (r: any) => 
+          (r.requester_id === user.id && r.target_id === doctor.id) ||
+          (r.target_id === user.id && r.requester_id === doctor.id)
+      );
+
+      return {
+        id: doctor.id,
+        full_name: doctor.full_name,
+        avatar_url: doctor.avatar_url,
+        is_linked: isLinked,
+        pending_request: pendingRequest ? {
+          id: pendingRequest.id,
+          status: pendingRequest.status,
+          requester_role: pendingRequest.requester_role,
+          is_incoming: pendingRequest.target_id === user.id,
+        } : null,
+      };
+    });
+
+    return new Response(
+      JSON.stringify({ 
+        doctors: doctorsData,
+        current_doctor_id: existingRelation?.doctor_id || null,
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});

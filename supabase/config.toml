@@ -14,3 +14,15 @@ verify_jwt = true
 
 [functions.create-patient-invitation]
 verify_jwt = true
+
+[functions.get-all-patients]
+verify_jwt = true
+
+[functions.get-all-doctors]
+verify_jwt = true
+
+[functions.handle-link-request]
+verify_jwt = true
+
+[functions.get-pending-requests]
+verify_jwt = true

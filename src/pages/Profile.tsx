@@ -6,7 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, FileText, Calendar, User, Camera, Loader2, Save, X, Pencil } from "lucide-react";
+import { ArrowLeft, FileText, Calendar, User, Camera, Loader2, Save, X, Pencil, Stethoscope } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { DoctorSelector } from "@/components/DoctorSelector";
+import { LinkRequestsNotification } from "@/components/LinkRequestsNotification";
 import { Session } from "@supabase/supabase-js";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useForm } from "react-hook-form";
@@ -20,7 +23,7 @@ interface Diet {
   created_at: string;
 }
 
-interface Profile {
+interface ProfileData {
   full_name: string | null;
   avatar_url: string | null;
 }
@@ -32,7 +35,8 @@ const profileSchema = z.object({
 const Profile = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [diet, setDiet] = useState<Diet | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const { role } = useUserRole();
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -266,11 +270,11 @@ const Profile = () => {
       />
 
       <div className="min-h-[100dvh] flex flex-col bg-gradient-to-br from-background via-secondary to-background">
-        <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm shrink-0">
+      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm shrink-0">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center">
           <Button
             variant="ghost"
-            onClick={() => navigate("/chat")}
+            onClick={() => navigate(role === "doctor" ? "/dashboard" : "/chat")}
             size="sm"
             className="gap-2"
           >
@@ -280,7 +284,7 @@ const Profile = () => {
           <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Mi Perfil
           </h1>
-          <div className="w-[60px] sm:w-[80px]"></div>
+          <LinkRequestsNotification />
         </div>
       </header>
 
@@ -392,58 +396,64 @@ const Profile = () => {
             </form>
           </Card>
 
-          <Card className="p-4 sm:p-6 bg-card border-border/50">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-primary" />
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-foreground">
-                Plan Nutricional
-              </h3>
-            </div>
-
-            {diet ? (
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/20">
-                  <User className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-muted-foreground mb-1">Nombre del plan</p>
-                    <p className="text-sm sm:text-base font-medium text-foreground break-words">
-                      {diet.file_name}
-                    </p>
+          {role === "patient" && (
+            <>
+              <DoctorSelector />
+              
+              <Card className="p-4 sm:p-6 bg-card border-border/50">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-primary" />
                   </div>
+                  <h3 className="text-lg sm:text-xl font-semibold text-foreground">
+                    Plan Nutricional
+                  </h3>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/20">
-                  <Calendar className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-muted-foreground mb-1">Fecha de carga</p>
-                    <p className="text-sm sm:text-base font-medium text-foreground">
-                      {formatDate(diet.created_at)}
-                    </p>
-                  </div>
-                </div>
+                {diet ? (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/20">
+                      <User className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-muted-foreground mb-1">Nombre del plan</p>
+                        <p className="text-sm sm:text-base font-medium text-foreground break-words">
+                          {diet.file_name}
+                        </p>
+                      </div>
+                    </div>
 
-                <Button
-                  variant="outline"
-                  onClick={() => navigate("/upload")}
-                  className="w-full mt-2"
-                >
-                  Actualizar plan
-                </Button>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                <p className="text-muted-foreground mb-4">
-                  No tienes ningún plan nutricional cargado
-                </p>
-                <Button onClick={() => navigate("/upload")}>
-                  Subir plan
-                </Button>
-              </div>
-            )}
-          </Card>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/20">
+                      <Calendar className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-muted-foreground mb-1">Fecha de carga</p>
+                        <p className="text-sm sm:text-base font-medium text-foreground">
+                          {formatDate(diet.created_at)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate("/upload")}
+                      className="w-full mt-2"
+                    >
+                      Actualizar plan
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <FileText className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <p className="text-muted-foreground mb-4">
+                      No tienes ningún plan nutricional cargado
+                    </p>
+                    <Button onClick={() => navigate("/upload")}>
+                      Subir plan
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            </>
+          )}
         </div>
       </main>
     </div>
