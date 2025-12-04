@@ -169,6 +169,7 @@ NO agregues texto adicional, solo el JSON.`
 
     // Guardar en la base de datos
     const lastMessageDate = messages[messages.length - 1]?.created_at;
+    const patientMessagesCount = messages.filter(m => m.role === 'user').length;
 
     const { data: savedSummary, error: saveError } = await serviceClient
       .from('patient_summaries')
@@ -178,7 +179,7 @@ NO agregues texto adicional, solo el JSON.`
         summary_text: JSON.stringify(parsedSummary),
         topics: parsedSummary.temas_principales || [],
         key_concerns: parsedSummary.preocupaciones_clave || [],
-        chat_messages_analyzed: messages.length,
+        chat_messages_analyzed: patientMessagesCount,
         last_chat_date: lastMessageDate,
       }, {
         onConflict: 'patient_id,doctor_id'
@@ -195,7 +196,7 @@ NO agregues texto adicional, solo el JSON.`
           ...parsedSummary,
           id: savedSummary.id,
           generated_at: savedSummary.generated_at,
-          messages_analyzed: messages.length,
+          messages_analyzed: patientMessagesCount,
         },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
