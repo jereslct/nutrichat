@@ -105,7 +105,7 @@ serve(async (req) => {
           .insert({
             doctor_id: doctorId,
             patient_id: patientId,
-            assigned_by: 'mutual_request',
+            assigned_by: 'invitation',
           });
 
         if (relError && relError.code !== '23505') throw relError;
