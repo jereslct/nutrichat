@@ -12,6 +12,7 @@ interface Doctor {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
+  specialty: string;
   is_linked: boolean;
   pending_request: {
     id: string;
@@ -183,7 +184,7 @@ export const DoctorSelector = () => {
                     </Badge>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">Nutricionista</p>
+                <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
               </div>
 
               {doctor.is_linked ? (

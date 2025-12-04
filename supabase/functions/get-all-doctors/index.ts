@@ -54,7 +54,7 @@ serve(async (req) => {
     // Obtener todos los doctores del sistema
     const { data: allDoctors, error: doctorsError } = await serviceClient
       .from('profiles')
-      .select('id, full_name, avatar_url')
+      .select('id, full_name, avatar_url, specialty')
       .eq('role', 'doctor')
       .order('full_name', { ascending: true });
 
@@ -88,6 +88,7 @@ serve(async (req) => {
         id: doctor.id,
         full_name: doctor.full_name,
         avatar_url: doctor.avatar_url,
+        specialty: doctor.specialty || 'Médico',
         is_linked: isLinked,
         pending_request: pendingRequest ? {
           id: pendingRequest.id,

@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, FileText, Calendar, User, Camera, Loader2, Save, X, Pencil, Stethoscope } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -26,7 +33,19 @@ interface Diet {
 interface ProfileData {
   full_name: string | null;
   avatar_url: string | null;
+  specialty: string | null;
 }
+
+const SPECIALTIES = [
+  "Nutricionista",
+  "Médico General",
+  "Psicólogo",
+  "Cirujano",
+  "Endocrinólogo",
+  "Cardiólogo",
+  "Dermatólogo",
+  "Otro",
+];
 
 const profileSchema = z.object({
   full_name: z.string().trim().min(2, "El nombre debe tener al menos 2 caracteres").max(100, "El nombre no puede superar 100 caracteres"),
@@ -45,6 +64,7 @@ const Profile = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [specialty, setSpecialty] = useState<string>("");
 
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm({
     resolver: zodResolver(profileSchema),
@@ -74,13 +94,14 @@ const Profile = () => {
   const loadUserData = async (userId: string) => {
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("full_name, avatar_url")
+      .select("full_name, avatar_url, specialty")
       .eq("id", userId)
       .single();
 
     if (profileData) {
       setProfile(profileData);
       setValue("full_name", profileData.full_name || "");
+      setSpecialty(profileData.specialty || "");
     }
 
     const { data: dietData } = await supabase
@@ -205,14 +226,23 @@ const Profile = () => {
     setIsSaving(true);
 
     try {
+      const updateData: { full_name: string; specialty?: string } = { 
+        full_name: data.full_name 
+      };
+      
+      // Si es doctor, también guardar la especialidad
+      if (role === "doctor") {
+        updateData.specialty = specialty;
+      }
+      
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: data.full_name })
+        .update(updateData)
         .eq("id", session.user.id);
 
       if (error) throw error;
 
-      setProfile((prev) => prev ? { ...prev, full_name: data.full_name } : null);
+      setProfile((prev) => prev ? { ...prev, full_name: data.full_name, specialty: specialty } : null);
       setIsEditing(false);
 
       toast({
@@ -233,6 +263,7 @@ const Profile = () => {
 
   const handleCancel = () => {
     reset({ full_name: profile?.full_name || "" });
+    setSpecialty(profile?.specialty || "");
     setIsEditing(false);
   };
 
@@ -326,18 +357,38 @@ const Profile = () => {
                 </div>
                 
                 {isEditing ? (
-                  <div className="w-full space-y-2">
-                    <Label htmlFor="full_name">Nombre completo</Label>
-                    <Input
-                      id="full_name"
-                      {...register("full_name")}
-                      placeholder="Tu nombre completo"
-                      className="text-center sm:text-left"
-                    />
-                    {errors.full_name && (
-                      <p className="text-sm text-destructive text-center sm:text-left">
-                        {errors.full_name.message}
-                      </p>
+                  <div className="w-full space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="full_name">Nombre completo</Label>
+                      <Input
+                        id="full_name"
+                        {...register("full_name")}
+                        placeholder="Tu nombre completo"
+                        className="text-center sm:text-left"
+                      />
+                      {errors.full_name && (
+                        <p className="text-sm text-destructive text-center sm:text-left">
+                          {errors.full_name.message}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {role === "doctor" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="specialty">Especialidad</Label>
+                        <Select value={specialty} onValueChange={setSpecialty}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona tu especialidad" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SPECIALTIES.map((spec) => (
+                              <SelectItem key={spec} value={spec}>
+                                {spec}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -348,6 +399,9 @@ const Profile = () => {
                     <p className="text-sm sm:text-base text-muted-foreground">
                       {session?.user?.email}
                     </p>
+                    {role === "doctor" && profile?.specialty && (
+                      <p className="text-sm text-accent mt-1">{profile.specialty}</p>
+                    )}
                   </div>
                 )}
               </div>
