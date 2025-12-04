@@ -54,8 +54,14 @@ serve(async (req) => {
       );
     }
 
+    // Get service role client for accessing all data
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Verificar que el paciente está asignado a este médico
-    const { data: relationship } = await supabaseClient
+    const { data: relationship } = await serviceClient
       .from('doctor_patients')
       .select('id')
       .eq('doctor_id', user.id)
@@ -69,8 +75,8 @@ serve(async (req) => {
       );
     }
 
-    // Obtener mensajes del chat del paciente (últimos 100)
-    const { data: messages, error: messagesError } = await supabaseClient
+    // Obtener mensajes del chat del paciente (últimos 100) usando service role
+    const { data: messages, error: messagesError } = await serviceClient
       .from('chat_messages')
       .select('content, role, created_at')
       .eq('user_id', patient_id)
@@ -151,7 +157,7 @@ NO agregues texto adicional, solo el JSON.`
     // Guardar en la base de datos
     const lastMessageDate = messages[messages.length - 1]?.created_at;
 
-    const { data: savedSummary, error: saveError } = await supabaseClient
+    const { data: savedSummary, error: saveError } = await serviceClient
       .from('patient_summaries')
       .upsert({
         patient_id,
