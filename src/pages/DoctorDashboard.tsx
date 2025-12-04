@@ -28,13 +28,13 @@ import {
   Users,
   MessageSquare,
   Clock,
-  ChevronRight,
   LogOut,
   User,
   Loader2,
 } from "lucide-react";
 import { LinkRequestsNotification } from "@/components/LinkRequestsNotification";
 import { AllPatientsDialog } from "@/components/AllPatientsDialog";
+import { PatientDetailDialog } from "@/components/PatientDetailDialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface Patient {
@@ -373,10 +373,10 @@ const DoctorDashboard = () => {
                           )}
                         </div>
 
-                        <Button variant="ghost" size="sm">
-                          Ver detalle
-                          <ChevronRight className="ml-1 h-4 w-4" />
-                        </Button>
+                        <PatientDetailDialog
+                          patientId={patient.id}
+                          patientName={patient.full_name}
+                        />
                       </div>
                     </CardContent>
                   </Card>
