@@ -95,11 +95,12 @@ serve(async (req) => {
           .limit(1)
           .maybeSingle();
 
-        // Total de mensajes
+        // Total de mensajes (solo del paciente, no del asistente)
         const { count: messageCount } = await serviceClient
           .from('chat_messages')
           .select('*', { count: 'exact', head: true })
-          .eq('user_id', patientId);
+          .eq('user_id', patientId)
+          .eq('role', 'user');
 
         // Verificar si tiene dieta
         const { data: diet } = await serviceClient
