@@ -145,10 +145,23 @@ NO agregues texto adicional, solo el JSON.`
     const aiData = await aiResponse.json();
     const summaryText = aiData.choices[0].message.content;
 
-    // Parsear el JSON del resumen
+    // Parsear el JSON del resumen (manejar respuestas con markdown)
     let parsedSummary;
     try {
-      parsedSummary = JSON.parse(summaryText);
+      let jsonText = summaryText.trim();
+      
+      // Remover bloques de código markdown si existen
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.slice(7);
+      } else if (jsonText.startsWith('```')) {
+        jsonText = jsonText.slice(3);
+      }
+      if (jsonText.endsWith('```')) {
+        jsonText = jsonText.slice(0, -3);
+      }
+      jsonText = jsonText.trim();
+      
+      parsedSummary = JSON.parse(jsonText);
     } catch (e) {
       console.error('Error parseando JSON de IA:', summaryText);
       throw new Error('La IA no devolvió un JSON válido');
