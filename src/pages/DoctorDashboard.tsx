@@ -35,6 +35,8 @@ import {
 import { LinkRequestsNotification } from "@/components/LinkRequestsNotification";
 import { AllPatientsDialog } from "@/components/AllPatientsDialog";
 import { PatientDetailDialog } from "@/components/PatientDetailDialog";
+import { PatientsListDialog } from "@/components/PatientsListDialog";
+import { PendingRequestsDialog } from "@/components/PendingRequestsDialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface Patient {
@@ -246,17 +248,19 @@ const DoctorDashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card className="bg-card/50 border-border/50">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-full">
-                <Users className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{patients.length}</p>
-                <p className="text-sm text-muted-foreground">Pacientes</p>
-              </div>
-            </CardContent>
-          </Card>
+          <PatientsListDialog patients={patients}>
+            <Card className="bg-card/50 border-border/50 cursor-pointer hover:bg-card/80 transition-colors">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-full">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{patients.length}</p>
+                  <p className="text-sm text-muted-foreground">Pacientes</p>
+                </div>
+              </CardContent>
+            </Card>
+          </PatientsListDialog>
           <Card className="bg-card/50 border-border/50">
             <CardContent className="p-4 flex items-center gap-4">
               <div className="p-3 bg-accent/10 rounded-full">
@@ -268,17 +272,19 @@ const DoctorDashboard = () => {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-card/50 border-border/50">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 bg-destructive/10 rounded-full">
-                <Clock className="h-6 w-6 text-destructive" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{pendingFollowUp}</p>
-                <p className="text-sm text-muted-foreground">Pendiente seguimiento</p>
-              </div>
-            </CardContent>
-          </Card>
+          <PendingRequestsDialog onUpdate={() => { fetchPatients(); fetchPendingRequestsCount(); }}>
+            <Card className="bg-card/50 border-border/50 cursor-pointer hover:bg-card/80 transition-colors">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="p-3 bg-destructive/10 rounded-full">
+                  <Clock className="h-6 w-6 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{pendingFollowUp}</p>
+                  <p className="text-sm text-muted-foreground">Pendiente seguimiento</p>
+                </div>
+              </CardContent>
+            </Card>
+          </PendingRequestsDialog>
         </div>
 
         {/* Search for mobile */}
