@@ -68,6 +68,7 @@ const DoctorDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   useEffect(() => {
     if (!roleLoading && !user) {
@@ -80,8 +81,19 @@ const DoctorDashboard = () => {
   useEffect(() => {
     if (user && role === "doctor") {
       fetchPatients();
+      fetchPendingRequestsCount();
     }
   }, [user, role, pagination.page]);
+
+  const fetchPendingRequestsCount = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("get-pending-requests");
+      if (error) throw error;
+      setPendingRequestsCount(data?.total_incoming || 0);
+    } catch (error) {
+      console.error("Error fetching pending requests:", error);
+    }
+  };
 
   const fetchPatients = async () => {
     setLoading(true);
@@ -149,9 +161,7 @@ const DoctorDashboard = () => {
     (p) => getActivityStatus(p.last_activity) === "active"
   ).length;
   const totalMessages = patients.reduce((sum, p) => sum + p.total_messages, 0);
-  const pendingFollowUp = patients.filter(
-    (p) => getActivityStatus(p.last_activity) === "inactive"
-  ).length;
+  const pendingFollowUp = pendingRequestsCount;
 
   if (roleLoading) {
     return (
@@ -186,7 +196,7 @@ const DoctorDashboard = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <LinkRequestsNotification onUpdate={fetchPatients} />
+            <LinkRequestsNotification onUpdate={() => { fetchPatients(); fetchPendingRequestsCount(); }} />
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
