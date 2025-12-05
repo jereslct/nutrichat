@@ -72,8 +72,12 @@ export const PendingRequestsDialog = ({ children, onUpdate }: PendingRequestsDia
   const handleRequest = async (requestId: string, action: "accept" | "reject") => {
     setProcessingId(requestId);
     try {
+      const actionMap = {
+        accept: "accept_request",
+        reject: "reject_request",
+      };
       const { error } = await supabase.functions.invoke("handle-link-request", {
-        body: { requestId, action },
+        body: { request_id: requestId, action: actionMap[action] },
       });
       if (error) throw error;
       
