@@ -117,14 +117,26 @@ export const PatientDetailDialog = ({
             </div>
           </div>
         ) : error ? (
-          <div className="py-8 text-center space-y-4">
-            <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
-            <p className="text-muted-foreground">{error}</p>
-            <Button onClick={generateSummary} variant="outline">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Reintentar
-            </Button>
-          </div>
+          error.includes("No hay mensajes") ? (
+            <div className="py-8 text-center space-y-4">
+              <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto" />
+              <div className="space-y-2">
+                <p className="font-medium text-foreground">Sin conversaciones</p>
+                <p className="text-sm text-muted-foreground">
+                  Este paciente aún no ha realizado consultas en el chat.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="py-8 text-center space-y-4">
+              <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
+              <p className="text-muted-foreground">{error}</p>
+              <Button onClick={generateSummary} variant="outline">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reintentar
+              </Button>
+            </div>
+          )
         ) : summary ? (
           <div className="space-y-4 py-2">
             {/* Metadata */}
