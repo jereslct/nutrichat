@@ -60,10 +60,20 @@ export const PatientDetailDialog = ({
         }
       );
 
-      if (fnError) throw fnError;
+      // Check if data contains an error (from 4xx responses)
+      if (data?.error) {
+        setError(data.error);
+        return;
+      }
 
-      if (data.error) {
-        throw new Error(data.error);
+      if (fnError) {
+        // Try to extract actual error message from the response
+        const errorBody = await fnError.context?.json?.().catch(() => null);
+        if (errorBody?.error) {
+          setError(errorBody.error);
+          return;
+        }
+        throw fnError;
       }
 
       setSummary(data.summary);
