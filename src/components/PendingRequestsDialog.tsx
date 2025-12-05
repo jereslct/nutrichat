@@ -12,9 +12,11 @@ interface PendingRequest {
   requester_id: string;
   requester_role: string;
   created_at: string;
-  profile?: {
+  other_user?: {
+    id: string;
     full_name: string | null;
     avatar_url: string | null;
+    role: string;
   };
 }
 
@@ -125,14 +127,14 @@ export const PendingRequestsDialog = ({ children, onUpdate }: PendingRequestsDia
                   className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30"
                 >
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={request.profile?.avatar_url || undefined} />
+                    <AvatarImage src={request.other_user?.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary text-sm">
-                      {getInitials(request.profile?.full_name)}
+                      {getInitials(request.other_user?.full_name)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <span className="font-medium text-sm block truncate">
-                      {request.profile?.full_name || "Sin nombre"}
+                      {request.other_user?.full_name || "Sin nombre"}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {formatDate(request.created_at)}
