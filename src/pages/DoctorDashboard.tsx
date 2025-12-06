@@ -373,9 +373,9 @@ const DoctorDashboard = () => {
                             />
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                            <span className="flex items-center gap-1">
-                              <MessageSquare className="h-3 w-3" />
-                              {patient.total_messages} mensajes
+                            <span className={`flex items-center gap-1 ${patient.total_messages === 0 ? 'text-muted-foreground/50' : ''}`}>
+                              <MessageSquare className={`h-3 w-3 ${patient.total_messages > 0 ? 'text-primary' : ''}`} />
+                              {patient.total_messages > 0 ? `${patient.total_messages} mensajes` : 'Sin consultas'}
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
