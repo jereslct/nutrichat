@@ -87,8 +87,8 @@ serve(async (req) => {
 
     if (!messages || messages.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'No hay mensajes para analizar' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, no_messages: true, message: 'No hay mensajes para analizar' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

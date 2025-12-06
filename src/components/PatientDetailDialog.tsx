@@ -60,19 +60,19 @@ export const PatientDetailDialog = ({
         }
       );
 
-      // Check if data contains an error (from 4xx responses)
+      // Check if patient has no messages
+      if (data?.no_messages) {
+        setError('no_messages');
+        return;
+      }
+
+      // Check if data contains an error
       if (data?.error) {
         setError(data.error);
         return;
       }
 
       if (fnError) {
-        // Try to extract actual error message from the response
-        const errorBody = await fnError.context?.json?.().catch(() => null);
-        if (errorBody?.error) {
-          setError(errorBody.error);
-          return;
-        }
         throw fnError;
       }
 
@@ -127,7 +127,7 @@ export const PatientDetailDialog = ({
             </div>
           </div>
         ) : error ? (
-          error.includes("No hay mensajes") ? (
+          error === "no_messages" ? (
             <div className="py-8 text-center space-y-4">
               <FileText className="h-12 w-12 text-muted-foreground/50 mx-auto" />
               <div className="space-y-2">
