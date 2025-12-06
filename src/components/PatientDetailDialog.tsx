@@ -21,6 +21,7 @@ import {
   ListChecks,
   TrendingUp,
   FileText,
+  Clock,
 } from "lucide-react";
 
 interface PatientSummary {
@@ -149,20 +150,32 @@ export const PatientDetailDialog = ({
           )
         ) : summary ? (
           <div className="space-y-4 py-2">
-            {/* Metadata */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="secondary">
-                {summary.messages_analyzed} mensajes analizados
-              </Badge>
-              {summary.generated_at && (
-                <span>
-                  Generado:{" "}
-                  {new Date(summary.generated_at).toLocaleString("es-AR", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}
-                </span>
-              )}
+            {/* Metadata with refresh button */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary">
+                  {summary.messages_analyzed} mensajes analizados
+                </Badge>
+                {summary.generated_at && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {new Date(summary.generated_at).toLocaleString("es-AR", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                  </span>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={generateSummary}
+                disabled={loading}
+                className="h-8 px-2 text-xs"
+              >
+                <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+                Actualizar
+              </Button>
             </div>
 
             {/* Resumen General */}
