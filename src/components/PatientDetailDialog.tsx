@@ -8,6 +8,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -166,16 +172,25 @@ export const PatientDetailDialog = ({
                   </span>
                 )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={generateSummary}
-                disabled={loading}
-                className="h-8 px-2 text-xs"
-              >
-                <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-                Actualizar
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={generateSummary}
+                      disabled={loading}
+                      className="h-8 px-2 text-xs"
+                    >
+                      <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+                      Actualizar
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Regenerar resumen con los mensajes más recientes</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             {/* Resumen General */}
