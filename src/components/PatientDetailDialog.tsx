@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { jsPDF } from "jspdf";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,6 +29,7 @@ import {
   TrendingUp,
   FileText,
   Clock,
+  Download,
 } from "lucide-react";
 
 interface PatientSummary {
@@ -97,6 +99,95 @@ export const PatientDetailDialog = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const exportToPDF = () => {
+    if (!summary) return;
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const maxWidth = pageWidth - margin * 2;
+    let yPos = 20;
+
+    // Title
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Resumen de ${patientName || "Paciente"}`, margin, yPos);
+    yPos += 10;
+
+    // Metadata
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    const dateStr = summary.generated_at
+      ? new Date(summary.generated_at).toLocaleString("es-AR", {
+          dateStyle: "long",
+          timeStyle: "short",
+        })
+      : "";
+    doc.text(`Generado: ${dateStr} | ${summary.messages_analyzed} mensajes analizados`, margin, yPos);
+    yPos += 15;
+
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
+
+    // Helper function to add section
+    const addSection = (title: string, content: string | string[]) => {
+      if (!content || (Array.isArray(content) && content.length === 0)) return;
+
+      // Check if we need a new page
+      if (yPos > 260) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(title, margin, yPos);
+      yPos += 7;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+
+      if (Array.isArray(content)) {
+        content.forEach((item) => {
+          const lines = doc.splitTextToSize(`• ${item}`, maxWidth);
+          if (yPos + lines.length * 5 > 280) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(lines, margin, yPos);
+          yPos += lines.length * 5 + 2;
+        });
+      } else {
+        const lines = doc.splitTextToSize(content, maxWidth);
+        if (yPos + lines.length * 5 > 280) {
+          doc.addPage();
+          yPos = 20;
+        }
+        doc.text(lines, margin, yPos);
+        yPos += lines.length * 5;
+      }
+
+      yPos += 10;
+    };
+
+    // Add sections
+    addSection("Resumen General", summary.resumen_general);
+    addSection("Temas Principales", summary.temas_principales);
+    addSection("Preocupaciones Clave", summary.preocupaciones_clave);
+    addSection("Patrones Detectados", summary.patrones_detectados);
+    addSection("Recomendaciones para el Médico", summary.recomendaciones_medicas);
+
+    // Save the PDF
+    const fileName = `resumen-${(patientName || "paciente").toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.pdf`;
+    doc.save(fileName);
+
+    toast({
+      title: "PDF exportado",
+      description: "El resumen se ha descargado correctamente",
+    });
   };
 
   const handleOpen = (isOpen: boolean) => {
@@ -278,8 +369,25 @@ export const PatientDetailDialog = ({
               </Card>
             )}
 
-            {/* Regenerar */}
-            <div className="flex justify-end pt-2">
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={exportToPDF}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Exportar PDF
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Descargar resumen como archivo PDF</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Button
                 onClick={generateSummary}
                 variant="outline"
