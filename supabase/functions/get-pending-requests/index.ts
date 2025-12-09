@@ -57,7 +57,7 @@ serve(async (req) => {
 
     if (outgoingError) throw outgoingError;
 
-    // Enrich with profile data
+    // Enrich with profile data and SECURE role from user_roles
     const enrichRequests = async (requests: any[], isIncoming: boolean) => {
       return Promise.all(
         (requests || []).map(async (req: any) => {
@@ -65,8 +65,15 @@ serve(async (req) => {
           
           const { data: profile } = await serviceClient
             .from('profiles')
-            .select('full_name, avatar_url, role')
+            .select('full_name, avatar_url')
             .eq('id', profileId)
+            .single();
+
+          // Get role from SECURE user_roles table (not profiles!)
+          const { data: roleData } = await serviceClient
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profileId)
             .single();
 
           return {
@@ -80,7 +87,7 @@ serve(async (req) => {
               id: profileId,
               full_name: profile?.full_name || 'Usuario',
               avatar_url: profile?.avatar_url,
-              role: profile?.role,
+              role: roleData?.role,
             },
           };
         })

@@ -31,14 +31,20 @@ serve(async (req) => {
       );
     }
 
-    // Verificar que el usuario es médico
-    const { data: userData } = await supabaseClient
-      .from('profiles')
+    // Get service role client for accessing all data
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Verificar que el usuario es médico usando la tabla SEGURA user_roles (no profiles!)
+    const { data: roleData } = await serviceClient
+      .from('user_roles')
       .select('role')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
-    if (userData?.role !== 'doctor') {
+    if (roleData?.role !== 'doctor') {
       return new Response(
         JSON.stringify({ error: 'Solo médicos pueden acceder' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -47,15 +53,17 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '10');
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 100); // Max 100
     const search = url.searchParams.get('search') || '';
     const offset = (page - 1) * limit;
 
-    // Get service role client for accessing all data
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Validate pagination params
+    if (page < 1 || limit < 1) {
+      return new Response(
+        JSON.stringify({ error: 'Parámetros de paginación inválidos' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Obtener pacientes del médico
     const { data: relationships, error: relError } = await serviceClient
