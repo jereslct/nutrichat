@@ -96,14 +96,14 @@ export const PatientsListDialog = ({ patients, children }: PatientsListDialogPro
                           }`}
                         />
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                        <span className={`flex items-center gap-1 ${patient.total_messages === 0 ? 'text-muted-foreground/50' : ''}`}>
-                          <MessageSquare className={`h-3 w-3 ${patient.total_messages > 0 ? 'text-primary' : ''}`} />
-                          {patient.total_messages > 0 ? patient.total_messages : 'Sin consultas'}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                        <span className={`flex items-center gap-1 whitespace-nowrap ${patient.total_messages === 0 ? 'text-muted-foreground/50' : ''}`}>
+                          <MessageSquare className={`h-3 w-3 flex-shrink-0 ${patient.total_messages > 0 ? 'text-primary' : ''}`} />
+                          <span>{patient.total_messages > 0 ? patient.total_messages : 'Sin'}</span>
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {formatLastActivity(patient.last_activity)}
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Clock className="h-3 w-3 flex-shrink-0" />
+                          <span>{formatLastActivity(patient.last_activity)}</span>
                         </span>
                       </div>
                       {patient.has_diet && (
