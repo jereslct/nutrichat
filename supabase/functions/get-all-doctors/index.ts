@@ -31,31 +31,48 @@ serve(async (req) => {
       );
     }
 
-    // Verificar que el usuario es paciente
-    const { data: userData } = await supabaseClient
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (userData?.role !== 'patient') {
-      return new Response(
-        JSON.stringify({ error: 'Solo pacientes pueden acceder' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Get service role client for accessing all data
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Obtener todos los doctores del sistema
+    // Verificar que el usuario es paciente usando la tabla SEGURA user_roles (no profiles!)
+    const { data: roleData } = await serviceClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (roleData?.role !== 'patient') {
+      return new Response(
+        JSON.stringify({ error: 'Solo pacientes pueden acceder' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Obtener IDs de doctores desde user_roles
+    const { data: doctorRoles, error: rolesError } = await serviceClient
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'doctor');
+
+    if (rolesError) throw rolesError;
+
+    const doctorIds = (doctorRoles || []).map((r: any) => r.user_id);
+
+    if (doctorIds.length === 0) {
+      return new Response(
+        JSON.stringify({ doctors: [], current_doctor_id: null }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Obtener perfiles de doctores
     const { data: allDoctors, error: doctorsError } = await serviceClient
       .from('profiles')
       .select('id, full_name, avatar_url, specialty')
-      .eq('role', 'doctor')
+      .in('id', doctorIds)
       .order('full_name', { ascending: true });
 
     if (doctorsError) throw doctorsError;

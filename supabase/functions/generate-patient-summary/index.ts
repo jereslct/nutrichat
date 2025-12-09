@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const isValidUUID = (id: string): boolean => UUID_REGEX.test(id);
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -31,14 +36,20 @@ serve(async (req) => {
       );
     }
 
-    // Verificar que el usuario es médico
-    const { data: userData } = await supabaseClient
-      .from('profiles')
+    // Get service role client for accessing all data
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Verificar que el usuario es médico usando la tabla SEGURA user_roles (no profiles!)
+    const { data: roleData } = await serviceClient
+      .from('user_roles')
       .select('role')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
-    if (userData?.role !== 'doctor') {
+    if (roleData?.role !== 'doctor') {
       return new Response(
         JSON.stringify({ error: 'Solo médicos pueden generar resúmenes' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -47,18 +58,13 @@ serve(async (req) => {
 
     const { patient_id } = await req.json();
 
-    if (!patient_id) {
+    // Input validation
+    if (!patient_id || !isValidUUID(patient_id)) {
       return new Response(
-        JSON.stringify({ error: 'patient_id es requerido' }),
+        JSON.stringify({ error: 'patient_id inválido' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Get service role client for accessing all data
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     // Verificar que el paciente está asignado a este médico
     const { data: relationship } = await serviceClient

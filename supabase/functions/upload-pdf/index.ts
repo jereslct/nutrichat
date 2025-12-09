@@ -7,6 +7,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Max PDF size: 10MB in base64 (roughly 13MB due to base64 encoding overhead)
+const MAX_PDF_SIZE = 13 * 1024 * 1024;
+const MAX_FILENAME_LENGTH = 255;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -47,11 +51,51 @@ serve(async (req) => {
 
     const { pdf, fileName } = await req.json();
 
-    if (!pdf || !fileName) {
-      throw new Error("PDF y nombre de archivo son requeridos");
+    // Input validation
+    if (!pdf || typeof pdf !== 'string') {
+      return new Response(
+        JSON.stringify({ error: "PDF es requerido y debe ser una cadena base64" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    console.log("Procesando PDF:", fileName);
+    if (!fileName || typeof fileName !== 'string') {
+      return new Response(
+        JSON.stringify({ error: "Nombre de archivo es requerido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate file size
+    if (pdf.length > MAX_PDF_SIZE) {
+      return new Response(
+        JSON.stringify({ error: "El archivo PDF es demasiado grande. Máximo 10MB" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate filename length and sanitize
+    if (fileName.length > MAX_FILENAME_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: "El nombre del archivo es demasiado largo" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Sanitize filename - remove potentially dangerous characters
+    const sanitizedFileName = fileName
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
+      .trim()
+      .slice(0, MAX_FILENAME_LENGTH);
+
+    if (!sanitizedFileName) {
+      return new Response(
+        JSON.stringify({ error: "Nombre de archivo inválido" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log("Procesando PDF:", sanitizedFileName);
 
     // Usar Lovable AI para extraer el contenido del PDF de manera confiable
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -119,7 +163,7 @@ serve(async (req) => {
       .from("diets")
       .insert({
         user_id: userId,
-        file_name: fileName,
+        file_name: sanitizedFileName,
         pdf_text: extractedText,
       })
       .select()

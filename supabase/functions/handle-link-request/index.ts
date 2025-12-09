@@ -6,6 +6,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const isValidUUID = (id: string): boolean => UUID_REGEX.test(id);
+
+const VALID_ACTIONS = ['send_request', 'accept_request', 'reject_request', 'cancel_request'] as const;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -34,20 +41,42 @@ serve(async (req) => {
     const body = await req.json();
     const { action, target_id, request_id } = body;
 
-    // Get user's role
-    const { data: userData } = await supabaseClient
-      .from('profiles')
-      .select('role, full_name')
-      .eq('id', user.id)
-      .single();
+    // Input validation
+    if (!action || !VALID_ACTIONS.includes(action)) {
+      return new Response(
+        JSON.stringify({ error: 'Acción no válida' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    const userRole = userData?.role;
+    if (action === 'send_request' && (!target_id || !isValidUUID(target_id))) {
+      return new Response(
+        JSON.stringify({ error: 'target_id inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (['accept_request', 'reject_request', 'cancel_request'].includes(action) && (!request_id || !isValidUUID(request_id))) {
+      return new Response(
+        JSON.stringify({ error: 'request_id inválido' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get service role client
     const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+
+    // Get user's role from SECURE user_roles table (not profiles!)
+    const { data: roleData } = await serviceClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .single();
+
+    const userRole = roleData?.role;
 
     // Handle different actions
     switch (action) {
