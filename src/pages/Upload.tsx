@@ -205,45 +205,45 @@ const Upload = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary to-background">
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+    <div className="min-h-screen bg-white">
+      <header className="border-b border-neutral-200 bg-white sticky top-0 z-50">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+          <h1 className="text-lg sm:text-xl font-bold text-neutral-900">
             FoodTalk
           </h1>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/profile")} size="sm">
-              <UserCircle className="mr-2 h-4 w-4" />
-              Perfil
+            <Button variant="ghost" onClick={() => navigate("/profile")} size="sm" className="text-neutral-700 hover:bg-neutral-100">
+              <UserCircle className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Perfil</span>
             </Button>
             {existingDiet && (
-              <Button variant="outline" onClick={() => navigate("/chat")} size="sm">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Chat
+              <Button variant="ghost" onClick={() => navigate("/chat")} size="sm" className="text-neutral-700 hover:bg-neutral-100">
+                <MessageSquare className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Chat</span>
               </Button>
             )}
-            <Button variant="outline" onClick={handleLogout} size="sm">
-              <LogOut className="mr-2 h-4 w-4" />
-              Cerrar sesión
+            <Button variant="ghost" onClick={handleLogout} size="sm" className="text-neutral-700 hover:bg-neutral-100">
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Salir</span>
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="shadow-lg border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UploadIcon className="h-5 w-5 text-primary" />
-                Subir Plan Nutricional
-              </CardTitle>
-              <CardDescription>
-                Sube tu plan nutricional en formato PDF para comenzar
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 max-w-5xl">
+        <div className="grid gap-8 md:grid-cols-2">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <h1 className="text-heading-2 text-neutral-900">
+                Sube tu plan
+              </h1>
+              <p className="text-body text-neutral-600">
+                Carga tu plan nutricional en PDF para comenzar a recibir respuestas personalizadas.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-neutral-300 rounded-2xl p-8 sm:p-12 text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer group interactive">
                 <input
                   type="file"
                   accept=".pdf"
@@ -252,32 +252,54 @@ const Upload = () => {
                   id="pdf-upload"
                   disabled={uploading}
                 />
-                <label htmlFor="pdf-upload" className="cursor-pointer">
-                  <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <label htmlFor="pdf-upload" className="cursor-pointer block">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <UploadIcon className="h-8 w-8 text-primary" />
+                  </div>
                   {file ? (
-                    <p className="text-sm font-medium">{file.name}</p>
+                    <>
+                      <p className="text-heading-3 text-neutral-900 mb-1">{file.name}</p>
+                      <p className="text-sm text-neutral-600">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </>
                   ) : (
                     <>
-                      <p className="text-sm font-medium mb-1">Haz clic para seleccionar</p>
-                      <p className="text-xs text-muted-foreground">o arrastra tu archivo PDF aquí</p>
+                      <p className="text-heading-3 text-neutral-900 mb-2">Arrastrá tu archivo</p>
+                      <p className="text-body text-neutral-600 mb-2">o hacé clic para seleccionar</p>
+                      <p className="text-sm text-neutral-500">
+                        PDF • Máx 10MB • Seguro y privado
+                      </p>
                     </>
                   )}
                 </label>
               </div>
+
               {uploading && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{uploadStatus}</span>
-                    <span className="font-medium">{uploadProgress}%</span>
+                <div className="space-y-4 animate-fade-in">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-neutral-700 font-medium">{uploadStatus}</span>
+                      <span className="text-neutral-600 tabular-nums">{uploadProgress}%</span>
+                    </div>
+                    <div className="h-2 bg-neutral-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-500"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
                   </div>
-                  <Progress value={uploadProgress} className="h-2" />
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-900">
+                      💡 <strong>Tip:</strong> Mientras procesamos tu plan, podés pensar en tus preguntas.
+                    </p>
+                  </div>
                 </div>
               )}
-              
+
               <Button
                 onClick={handleUpload}
                 disabled={!file || uploading}
-                className="w-full"
+                className="w-full bg-primary hover:bg-primary/90 text-white h-11 interactive"
               >
                 {uploading ? (
                   <>
@@ -291,61 +313,62 @@ const Upload = () => {
                   </>
                 )}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {existingDiet && (
-            <Card className="shadow-lg border-border/50 bg-gradient-to-br from-card to-secondary/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-accent" />
-                  Chat con IA
-                </CardTitle>
-                <CardDescription>
-                  Tu plan nutricional está listo para consultas
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="text-sm font-medium mb-1">Plan actual:</p>
-                  <p className="text-sm text-muted-foreground">{existingDiet.file_name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Subido el {new Date(existingDiet.created_at).toLocaleDateString()}
-                  </p>
+            <div className="space-y-6 bg-neutral-50 rounded-2xl p-6 sm:p-8 h-fit md:sticky md:top-24 animate-slide-up">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <MessageSquare className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-heading-3 text-neutral-900">Tu plan está listo</h2>
+                    <p className="text-sm text-neutral-600">Comienza a conversar</p>
+                  </div>
                 </div>
-                <Button
-                  onClick={() => navigate("/chat")}
-                  className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
-                >
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Iniciar Chat
-                </Button>
-                
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" className="w-full">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Eliminar Plan
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Esta acción eliminará permanentemente tu plan nutricional y todo el historial de chat asociado. 
-                        No podrás recuperar esta información.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteDiet} className="bg-destructive hover:bg-destructive/90">
-                        Eliminar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardContent>
-            </Card>
+              </div>
+
+              <div className="bg-white border border-neutral-200 rounded-lg p-4 space-y-2">
+                <p className="text-xs font-medium text-neutral-600 uppercase">Plan actual</p>
+                <p className="text-sm font-medium text-neutral-900">{existingDiet.file_name}</p>
+                <p className="text-xs text-neutral-500">
+                  Subido el {new Date(existingDiet.created_at).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" })}
+                </p>
+              </div>
+
+              <Button
+                onClick={() => navigate("/chat")}
+                className="w-full bg-primary hover:bg-primary/90 text-white h-11 interactive"
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Iniciar Chat
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="w-full border-red-200 text-red-700 hover:bg-red-50">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Eliminar Plan
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esto eliminará permanentemente tu plan y todo el historial de chat. No se puede deshacer.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteDiet} className="bg-destructive hover:bg-destructive/90">
+                      Eliminar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           )}
         </div>
       </main>

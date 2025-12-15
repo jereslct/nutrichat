@@ -174,35 +174,39 @@ const DoctorDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary to-background">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Leaf className="h-6 w-6 text-primary" />
-            <span className="font-bold text-lg bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+    <div className="min-h-screen bg-white">
+      <nav className="sticky top-0 z-50 bg-white border-b border-neutral-200">
+        <div className="container mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <Leaf className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+            </div>
+            <span className="font-bold text-lg sm:text-xl text-neutral-900">
               FoodTalk
             </span>
+            <Badge className="bg-primary/10 text-primary border-0 text-xs sm:text-sm">
+              Médico
+            </Badge>
           </div>
 
           <div className="hidden md:flex items-center gap-4 flex-1 max-w-md mx-8">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
               <Input
                 placeholder="Buscar paciente..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 bg-background/50"
+                className="pl-9 bg-neutral-50 border-neutral-300 text-neutral-900"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
             <LinkRequestsNotification onUpdate={() => { fetchPatients(); fetchPendingRequestsCount(); }} />
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2">
+                <Button variant="ghost" className="flex items-center gap-2 text-neutral-700 hover:bg-neutral-100">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={profile?.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary text-sm">
@@ -229,220 +233,217 @@ const DoctorDashboard = () => {
         </div>
       </nav>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Header */}
+      <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold">Dashboard Médico</h1>
-              <Badge className="bg-primary/10 text-primary border-0">
-                Doctor
-              </Badge>
-            </div>
-            <p className="text-muted-foreground text-sm mt-1">
-              Gestiona tus pacientes y revisa su progreso
+            <h1 className="text-heading-2 text-neutral-900">Panel de control</h1>
+            <p className="text-body text-neutral-600 mt-1">
+              Gestiona tus pacientes y monitorea su progreso
             </p>
           </div>
           <AllPatientsDialog onUpdate={fetchPatients} />
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
           <PatientsListDialog patients={patients}>
-            <Card className="bg-card/50 border-border/50 cursor-pointer hover:bg-card/80 transition-colors">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="p-3 bg-primary/10 rounded-full">
+            <Card className="bg-white border-neutral-200 cursor-pointer hover:border-primary hover:shadow-md transition-all interactive">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="p-3 bg-primary/10 rounded-xl">
                   <Users className="h-6 w-6 text-primary" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{patients.length}</p>
-                  <p className="text-sm text-muted-foreground">Pacientes</p>
+                <div className="flex-1">
+                  <p className="text-3xl font-bold text-neutral-900">{patients.length}</p>
+                  <p className="text-sm text-neutral-600">Pacientes activos</p>
                 </div>
               </CardContent>
             </Card>
           </PatientsListDialog>
-          <Card className="bg-card/50 border-border/50">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="p-3 bg-accent/10 rounded-full">
+          <Card className="bg-white border-neutral-200">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="p-3 bg-accent/10 rounded-xl">
                 <MessageSquare className="h-6 w-6 text-accent" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{totalMessages}</p>
-                <p className="text-sm text-muted-foreground">Consultas totales</p>
+              <div className="flex-1">
+                <p className="text-3xl font-bold text-neutral-900">{totalMessages}</p>
+                <p className="text-sm text-neutral-600">Consultas totales</p>
               </div>
             </CardContent>
           </Card>
           <PendingRequestsDialog onUpdate={() => { fetchPatients(); fetchPendingRequestsCount(); }}>
-            <Card className="bg-card/50 border-border/50 cursor-pointer hover:bg-card/80 transition-colors">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="p-3 bg-destructive/10 rounded-full">
-                  <Clock className="h-6 w-6 text-destructive" />
+            <Card className="bg-white border-neutral-200 cursor-pointer hover:border-primary hover:shadow-md transition-all interactive">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="p-3 bg-red-100 rounded-xl">
+                  <Clock className="h-6 w-6 text-red-600" />
                 </div>
-                <div>
-                  <p className="text-2xl font-bold">{pendingFollowUp}</p>
-                  <p className="text-sm text-muted-foreground">Pendiente seguimiento</p>
+                <div className="flex-1">
+                  <p className="text-3xl font-bold text-neutral-900">{pendingFollowUp}</p>
+                  <p className="text-sm text-neutral-600">Requieren seguimiento</p>
                 </div>
               </CardContent>
             </Card>
           </PendingRequestsDialog>
         </div>
 
-        {/* Search for mobile */}
         <div className="md:hidden">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
             <Input
               placeholder="Buscar paciente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-neutral-50 border-neutral-300"
             />
           </div>
         </div>
 
-        {/* Patients List */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              📋 Tus Pacientes
-            </h2>
-          </div>
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-heading-3 text-neutral-900 mb-4">Tus pacientes</h2>
 
-          {loading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="bg-card/50 border-border/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-4">
-                      <Skeleton className="h-12 w-12 rounded-full" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-3 w-48" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : filteredPatients.length === 0 ? (
-            <Card className="bg-card/50 border-border/50">
-              <CardContent className="p-8 text-center">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-medium mb-2">No hay pacientes</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {searchTerm
-                    ? "No se encontraron pacientes con ese nombre"
-                    : "Invita a tu primer paciente para comenzar"}
-                </p>
-                {!searchTerm && (
-                  <AllPatientsDialog onUpdate={fetchPatients} />
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {filteredPatients.map((patient) => {
-                const status = getActivityStatus(patient.last_activity);
-                return (
-                  <Card
-                    key={patient.id}
-                    className="bg-card/50 border-border/50 hover:bg-card/80 transition-colors cursor-pointer"
-                  >
+            {loading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="bg-white border-neutral-200 animate-pulse">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={patient.avatar_url || undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary">
-                            {getInitials(patient.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-medium truncate">
-                              {patient.full_name || "Sin nombre"}
-                            </h3>
-                            <span
-                              className={`h-2 w-2 rounded-full ${
-                                status === "active"
-                                  ? "bg-success"
-                                  : status === "moderate"
-                                  ? "bg-yellow-500"
-                                  : "bg-destructive"
-                              }`}
-                            />
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                            <span className={`flex items-center gap-1 ${patient.total_messages === 0 ? 'text-muted-foreground/50' : ''}`}>
-                              <MessageSquare className={`h-3 w-3 ${patient.total_messages > 0 ? 'text-primary' : ''}`} />
-                              {patient.total_messages > 0 ? `${patient.total_messages} mensajes` : 'Sin consultas'}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formatLastActivity(patient.last_activity)}
-                            </span>
-                          </div>
-                          {patient.has_diet && (
-                            <Badge variant="secondary" className="mt-2 text-xs">
-                              Plan cargado
-                            </Badge>
-                          )}
+                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-3 w-48" />
                         </div>
-
-                        <PatientDetailDialog
-                          patientId={patient.id}
-                          patientName={patient.full_name}
-                        />
                       </div>
                     </CardContent>
                   </Card>
-                );
-              })}
-            </div>
-          )}
+                ))}
+              </div>
+            ) : filteredPatients.length === 0 ? (
+              <Card className="bg-neutral-50 border-neutral-200">
+                <CardContent className="p-8 sm:p-12 text-center">
+                  <Users className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
+                  <h3 className="text-heading-3 text-neutral-900 mb-2">No hay pacientes</h3>
+                  <p className="text-body text-neutral-600 mb-6">
+                    {searchTerm
+                      ? "No se encontraron pacientes con ese nombre"
+                      : "Invita a tu primer paciente para comenzar"}
+                  </p>
+                  {!searchTerm && (
+                    <AllPatientsDialog onUpdate={fetchPatients} />
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {filteredPatients.map((patient) => {
+                  const status = getActivityStatus(patient.last_activity);
+                  return (
+                    <Card
+                      key={patient.id}
+                      className="bg-white border-neutral-200 hover:border-primary hover:shadow-md transition-all cursor-pointer interactive"
+                    >
+                      <CardContent className="p-4 sm:p-5">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <Avatar className="h-12 w-12 flex-shrink-0">
+                            <AvatarImage src={patient.avatar_url || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                              {getInitials(patient.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
 
-          {/* Pagination */}
-          {pagination.total_pages > 1 && (
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() =>
-                      setPagination((p) => ({ ...p, page: Math.max(1, p.page - 1) }))
-                    }
-                    className={pagination.page === 1 ? "pointer-events-none opacity-50" : ""}
-                  />
-                </PaginationItem>
-                {Array.from({ length: pagination.total_pages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        onClick={() => setPagination((p) => ({ ...p, page }))}
-                        isActive={pagination.page === page}
-                      >
-                        {page}
-                      </PaginationLink>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-neutral-900 truncate">
+                                {patient.full_name || "Sin nombre"}
+                              </h3>
+                              <div
+                                className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${
+                                  status === "active"
+                                    ? "bg-green-500"
+                                    : status === "moderate"
+                                    ? "bg-yellow-500"
+                                    : "bg-neutral-400"
+                                }`}
+                                title={
+                                  status === "active"
+                                    ? "Activo"
+                                    : status === "moderate"
+                                    ? "Moderado"
+                                    : "Inactivo"
+                                }
+                              />
+                            </div>
+                            <div className="flex items-center gap-4 text-xs sm:text-sm text-neutral-600 flex-wrap">
+                              <span className="flex items-center gap-1">
+                                <MessageSquare className={`h-3 w-3 ${patient.total_messages > 0 ? 'text-primary' : 'text-neutral-400'}`} />
+                                {patient.total_messages > 0 ? `${patient.total_messages} chats` : "Sin chats"}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formatLastActivity(patient.last_activity)}
+                              </span>
+                            </div>
+                            {patient.has_diet && (
+                              <Badge className="mt-2 text-xs bg-primary/10 text-primary border-0">
+                                Plan cargado
+                              </Badge>
+                            )}
+                          </div>
+
+                          <PatientDetailDialog
+                            patientId={patient.id}
+                            patientName={patient.full_name}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {pagination.total_pages > 1 && (
+              <div className="flex justify-center pt-4">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() =>
+                          setPagination((p) => ({ ...p, page: Math.max(1, p.page - 1) }))
+                        }
+                        className={pagination.page === 1 ? "pointer-events-none opacity-50" : ""}
+                      />
                     </PaginationItem>
-                  )
-                )}
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      setPagination((p) => ({
-                        ...p,
-                        page: Math.min(pagination.total_pages, p.page + 1),
-                      }))
-                    }
-                    className={
-                      pagination.page === pagination.total_pages
-                        ? "pointer-events-none opacity-50"
-                        : ""
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          )}
+                    {Array.from({ length: pagination.total_pages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setPagination((p) => ({ ...p, page }))}
+                            isActive={pagination.page === page}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      )
+                    )}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() =>
+                          setPagination((p) => ({
+                            ...p,
+                            page: Math.min(pagination.total_pages, p.page + 1),
+                          }))
+                        }
+                        className={
+                          pagination.page === pagination.total_pages
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
