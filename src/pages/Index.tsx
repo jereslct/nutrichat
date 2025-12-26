@@ -1,6 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Leaf, MessageSquare, Upload, Sparkles, ArrowRight, Check } from "lucide-react";
+import { 
+  Leaf, 
+  ArrowRight, 
+  ShoppingBasket, 
+  Brain, 
+  Clock, 
+  FileWarning, 
+  ShieldCheck,
+  MessageCircle
+} from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -8,6 +17,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 sm:px-6">
+        {/* Navbar Simplificado */}
         <nav className="flex items-center justify-between py-4 sm:py-6">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -15,168 +25,172 @@ const Index = () => {
             </div>
             <span className="font-bold text-lg sm:text-xl text-neutral-900">FoodTalk</span>
           </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => navigate("/auth")}
+            className="text-neutral-600 hover:text-primary"
+          >
+            Iniciar Sesión
+          </Button>
         </nav>
 
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
+          {/* HERO SECTION: Ataque al dolor (Willpower vs Organization) */}
           <div className="py-12 sm:py-20 text-center space-y-8">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/10 rounded-full mb-4">
-                <span className="text-xs sm:text-sm font-medium text-primary">Asistente Nutricional IA</span>
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 rounded-full mb-2 border border-red-100">
+                <span className="text-xs sm:text-sm font-medium text-red-600">
+                  ¿Cansado de abandonar dietas?
+                </span>
               </div>
 
-              <h1 className="text-display">
-                Tu plan nutricional <span className="text-primary">inteligente</span>
+              <h1 className="text-display leading-tight">
+                Tu dieta no falla por falta de voluntad. <br className="hidden sm:block" />
+                Falla por falta de <span className="text-primary relative whitespace-nowrap">
+                  organización
+                  <svg className="absolute w-full h-3 -bottom-1 left-0 text-primary/20" viewBox="0 0 100 10" preserveAspectRatio="none">
+                    <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" />
+                  </svg>
+                </span>.
               </h1>
 
               <p className="text-body-large max-w-2xl mx-auto text-neutral-600">
-                Sube tu plan PDF y conversa con IA experta. Respuestas instantáneas, sin esperas, sin confusiones. Disponible 24/7.
+                Los PDFs estáticos son imposibles de seguir en la vida real. 
+                FoodTalk convierte tu plan nutricional en un <strong>Asistente Ejecutivo</strong> que organiza tus compras, recetas y decisiones difíciles por ti.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
               <Button
                 size="lg"
                 onClick={() => navigate("/auth")}
-                className="bg-primary hover:bg-primary/90 text-white h-12 sm:h-11 px-6"
+                className="bg-primary hover:bg-primary/90 text-white h-14 px-8 text-lg shadow-lg shadow-primary/20 transition-transform hover:scale-105"
               >
-                Probar Gratis
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => navigate("/auth")}
-                className="h-12 sm:h-11 px-6 border border-neutral-300 text-neutral-900 hover:bg-neutral-50"
-              >
-                Iniciar Sesión
+                Convertir mi PDF en Acción
+                <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </div>
+            
+            <p className="text-xs text-neutral-400 mt-4">Prueba gratuita • Sin tarjeta de crédito requerida</p>
+          </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-8 border-t border-neutral-200">
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold text-neutral-900">1,200+</p>
-                <p className="text-xs sm:text-sm text-neutral-600 mt-1">Pacientes activos</p>
+          {/* PROBLEM AGITATION: El enemigo es el PDF estático */}
+          <div className="py-12 border-t border-neutral-100">
+            <h2 className="text-heading-3 text-center text-neutral-900 mb-10">
+              ¿Por qué es tan difícil seguir el plan?
+            </h2>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100">
+                <FileWarning className="h-10 w-10 text-orange-400 mb-4" />
+                <h3 className="font-bold text-neutral-900 mb-2">El PDF Olvidado</h3>
+                <p className="text-sm text-neutral-600">Guardas el plan en WhatsApp, pero nunca lo abres cuando realmente importa: en el supermercado.</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl sm:text-3xl font-bold text-neutral-900">15K+</p>
-                <p className="text-xs sm:text-sm text-neutral-600 mt-1">Consultas respondidas</p>
+              <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100">
+                <Brain className="h-10 w-10 text-orange-400 mb-4" />
+                <h3 className="font-bold text-neutral-900 mb-2">Fatiga de Decisión</h3>
+                <p className="text-sm text-neutral-600">Llegas cansado a casa y no tienes energía para calcular porciones. Terminas pidiendo delivery.</p>
               </div>
-              <div className="col-span-2 sm:col-span-1 text-center">
-                <p className="text-2xl sm:text-3xl font-bold text-neutral-900">100%</p>
-                <p className="text-xs sm:text-sm text-neutral-600 mt-1">Privacidad garantizada</p>
+              <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100">
+                <MessageCircle className="h-10 w-10 text-orange-400 mb-4" />
+                <h3 className="font-bold text-neutral-900 mb-2">Dudas sin Respuesta</h3>
+                <p className="text-sm text-neutral-600">"¿Puedo comer esto?" Tu nutri no responde un sábado a las 9pm. FoodTalk sí.</p>
               </div>
             </div>
           </div>
 
+          {/* SOLUTION / FEATURES: Enfocado en beneficios tangibles */}
           <div className="py-16 sm:py-24 space-y-12">
             <div>
-              <h2 className="text-heading-2 text-center mb-12 text-neutral-900">
-                Cómo funciona
+              <h2 className="text-heading-2 text-center mb-4 text-neutral-900">
+                Tu nueva "Prótesis Cognitiva"
               </h2>
-
-              <div className="grid md:grid-cols-3 gap-8">
-                <div className="relative animate-scale-in" style={{ animationDelay: "0s" }}>
-                  <div className="flex items-center justify-center mb-6">
-                    <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-2xl font-bold text-primary">1</span>
-                    </div>
-                  </div>
-                  <h3 className="text-heading-3 text-center text-neutral-900 mb-3">
-                    Sube tu PDF
-                  </h3>
-                  <p className="text-body text-center text-neutral-600">
-                    Carga tu plan nutricional. Totalmente seguro y encriptado.
-                  </p>
-                </div>
-
-                <div className="relative animate-scale-in" style={{ animationDelay: "0.1s" }}>
-                  <div className="flex items-center justify-center mb-6">
-                    <div className="w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center">
-                      <span className="text-2xl font-bold text-accent">2</span>
-                    </div>
-                  </div>
-                  <h3 className="text-heading-3 text-center text-neutral-900 mb-3">
-                    IA lo analiza
-                  </h3>
-                  <p className="text-body text-center text-neutral-600">
-                    Procesamiento inteligente de tu información nutricional.
-                  </p>
-                </div>
-
-                <div className="relative animate-scale-in" style={{ animationDelay: "0.2s" }}>
-                  <div className="flex items-center justify-center mb-6">
-                    <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-2xl font-bold text-primary">3</span>
-                    </div>
-                  </div>
-                  <h3 className="text-heading-3 text-center text-neutral-900 mb-3">
-                    Conversa libremente
-                  </h3>
-                  <p className="text-body text-center text-neutral-600">
-                    Haz preguntas y obtén respuestas instantáneas de expertos.
-                  </p>
-                </div>
-              </div>
+              <p className="text-center text-neutral-600 max-w-2xl mx-auto">
+                Deja de intentar memorizar tu dieta. Deja que la IA se encargue de la logística.
+              </p>
             </div>
 
-            <div className="bg-neutral-50 rounded-2xl p-8 sm:p-12 space-y-8">
-              <div>
-                <h2 className="text-heading-2 text-neutral-900 mb-12">
-                  Perfecto para
-                </h2>
+            <div className="grid md:grid-cols-3 gap-8">
+              {/* Feature 1: La Lista de Compras (Killer Feature) */}
+              <div className="relative p-6 rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-6">
+                  <ShoppingBasket className="h-7 w-7 text-green-600" />
+                </div>
+                <h3 className="text-heading-3 text-neutral-900 mb-3">
+                  Compras en 1 Clic
+                </h3>
+                <p className="text-body text-neutral-600">
+                  La IA lee tu PDF y genera la lista de supermercado exacta, organizada por pasillos. Evita comprar cosas que no necesitas.
+                </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <h3 className="text-heading-3 text-neutral-900">Pacientes</h3>
-                  <ul className="space-y-3">
-                    {["Dudas sobre porciones", "Sustituciones de alimentos", "Horarios de comidas", "Preguntas rápidas 24/7"].map((item) => (
-                      <li key={item} className="flex items-center gap-3">
-                        <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                        <span className="text-body text-neutral-700">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+              {/* Feature 2: Just in Time Support */}
+              <div className="relative p-6 rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                  <Clock className="h-7 w-7 text-blue-600" />
                 </div>
+                <h3 className="text-heading-3 text-neutral-900 mb-3">
+                  Soporte Instantáneo
+                </h3>
+                <p className="text-body text-neutral-600">
+                  ¿Estás en un restaurante? Sácale una foto al menú. FoodTalk te dirá qué plato pedir para cumplir tus objetivos hoy.
+                </p>
+              </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-heading-3 text-neutral-900">Nutricionistas</h3>
-                  <ul className="space-y-3">
-                    {["Seguimiento de pacientes", "Monitorear adherencia", "Documentar evolución", "Consultas inteligentes"].map((item) => (
-                      <li key={item} className="flex items-center gap-3">
-                        <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                        <span className="text-body text-neutral-700">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+              {/* Feature 3: Education/Translation */}
+              <div className="relative p-6 rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+                <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mb-6">
+                  <Brain className="h-7 w-7 text-purple-600" />
                 </div>
+                <h3 className="text-heading-3 text-neutral-900 mb-3">
+                  Traductor Nutricional
+                </h3>
+                <p className="text-body text-neutral-600">
+                  Convierte el "nutriñol" complejo en explicaciones simples. Aprende a comer sin necesidad de un título universitario.
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="py-16 sm:py-24 text-center space-y-8 border-t border-neutral-200">
+          {/* TRUST / SAFETY SECTION */}
+          <div className="bg-neutral-900 rounded-3xl p-8 sm:p-12 text-center text-white mb-20 relative overflow-hidden">
+             {/* Decorative background element */}
+            <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary via-neutral-900 to-neutral-900"></div>
+            
+            <div className="relative z-10 space-y-6">
+              <ShieldCheck className="h-12 w-12 text-primary mx-auto" />
+              <h2 className="text-2xl sm:text-3xl font-bold">Sin Alucinaciones. 100% Tu Plan.</h2>
+              <p className="text-neutral-300 max-w-2xl mx-auto text-lg">
+                Usamos tecnología RAG (Retrieval-Augmented Generation). A diferencia de ChatGPT genérico, FoodTalk 
+                <strong> solo</strong> usa la información clínica que subes en tu PDF. No inventamos dietas, ejecutamos la de tu doctor.
+              </p>
+            </div>
+          </div>
+
+          {/* FINAL CTA */}
+          <div className="py-16 text-center space-y-8">
             <div className="space-y-3">
               <h2 className="text-heading-2 text-neutral-900">
-                Comienza hoy
+                Deja de luchar contra tu memoria
               </h2>
               <p className="text-body-large text-neutral-600 max-w-xl mx-auto">
-                Sin tarjeta de crédito. Sin compromisos. Acceso completo a todas las funciones.
+                Tu salud merece más que un papel arrugado en el bolsillo. <br/>Digitaliza tu nutrición hoy mismo.
               </p>
             </div>
 
             <Button
               size="lg"
               onClick={() => navigate("/auth")}
-              className="bg-primary hover:bg-primary/90 text-white h-12 px-8"
+              className="bg-primary hover:bg-primary/90 text-white h-12 px-10 text-lg"
             >
-              Crear Cuenta
+              Comenzar Gratis
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </div>
 
-        <footer className="border-t border-neutral-200 py-8 mt-16 text-center text-sm text-neutral-600">
-          <p>© 2024 FoodTalk. Todos los derechos reservados.</p>
+        <footer className="border-t border-neutral-200 py-8 mt-8 text-center text-sm text-neutral-500">
+          <p>© 2025 FoodTalk. Diseñado para simplificar tu vida saludable.</p>
         </footer>
       </div>
     </div>
