@@ -17,7 +17,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 sm:px-6">
-        {/* Navbar Simplificado */}
         <nav className="flex items-center justify-between py-4 sm:py-6">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -36,7 +35,6 @@ const Index = () => {
         </nav>
 
         <div className="max-w-5xl mx-auto">
-          {/* HERO SECTION: Ataque al dolor (Willpower vs Organization) */}
           <div className="py-12 sm:py-20 text-center space-y-8">
             <div className="space-y-6">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 rounded-full mb-2 border border-red-100">
@@ -75,7 +73,6 @@ const Index = () => {
             <p className="text-xs text-neutral-400 mt-4">Prueba gratuita • Sin tarjeta de crédito requerida</p>
           </div>
 
-          {/* PROBLEM AGITATION: El enemigo es el PDF estático */}
           <div className="py-12 border-t border-neutral-100">
             <h2 className="text-heading-3 text-center text-neutral-900 mb-10">
               ¿Por qué es tan difícil seguir el plan?
@@ -99,7 +96,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* SOLUTION / FEATURES: Enfocado en beneficios tangibles */}
           <div className="py-16 sm:py-24 space-y-12">
             <div>
               <h2 className="text-heading-2 text-center mb-4 text-neutral-900">
@@ -111,7 +107,6 @@ const Index = () => {
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
-              {/* Feature 1: La Lista de Compras (Killer Feature) */}
               <div className="relative p-6 rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
                 <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-6">
                   <ShoppingBasket className="h-7 w-7 text-green-600" />
@@ -124,7 +119,6 @@ const Index = () => {
                 </p>
               </div>
 
-              {/* Feature 2: Just in Time Support */}
               <div className="relative p-6 rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
                 <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-6">
                   <Clock className="h-7 w-7 text-blue-600" />
@@ -137,7 +131,6 @@ const Index = () => {
                 </p>
               </div>
 
-              {/* Feature 3: Education/Translation */}
               <div className="relative p-6 rounded-2xl bg-white border border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
                 <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mb-6">
                   <Brain className="h-7 w-7 text-purple-600" />
@@ -152,9 +145,7 @@ const Index = () => {
             </div>
           </div>
 
-          {/* TRUST / SAFETY SECTION */}
           <div className="bg-neutral-900 rounded-3xl p-8 sm:p-12 text-center text-white mb-20 relative overflow-hidden">
-             {/* Decorative background element */}
             <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary via-neutral-900 to-neutral-900"></div>
             
             <div className="relative z-10 space-y-6">
@@ -167,7 +158,6 @@ const Index = () => {
             </div>
           </div>
 
-          {/* FINAL CTA */}
           <div className="py-16 text-center space-y-8">
             <div className="space-y-3">
               <h2 className="text-heading-2 text-neutral-900">
