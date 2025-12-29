@@ -82,7 +82,7 @@ serve(async (req) => {
     }
 
     // ========== GET IMAGE AND DIET ==========
-    const { imageBase64, dietId } = await req.json();
+    const { imageBase64, dietId, userComment } = await req.json();
 
     if (!imageBase64 || !dietId) {
       throw new Error("Imagen y dietId son requeridos");
@@ -93,7 +93,7 @@ serve(async (req) => {
       throw new Error("Formato de imagen inválido");
     }
 
-    console.log("Procesando imagen para dieta:", dietId);
+    console.log("Procesando imagen para dieta:", dietId, "comentario:", userComment || "(ninguno)");
 
     // Get user's diet
     const { data: diet, error: dietError } = await supabaseClient
@@ -159,7 +159,9 @@ INSTRUCCIONES IMPORTANTES:
               content: [
                 {
                   type: "text",
-                  text: "Por favor analiza esta foto de mi comida y dime si está alineada con mi plan nutricional."
+                  text: userComment 
+                    ? `Por favor analiza esta foto de mi comida. ${userComment}` 
+                    : "Por favor analiza esta foto de mi comida y dime si está alineada con mi plan nutricional."
                 },
                 {
                   type: "image_url",
