@@ -40,19 +40,32 @@ serve(async (req) => {
       );
     }
 
-    // Verificar que es médico
-    const { data: userData } = await supabaseClient
-      .from('profiles')
-      .select('role, full_name')
-      .eq('id', user.id)
+    // Use service role client to check secure user_roles table (not modifiable by users)
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Verify doctor role from secure user_roles table
+    const { data: roleData } = await serviceClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
       .single();
 
-    if (userData?.role !== 'doctor') {
+    if (roleData?.role !== 'doctor') {
       return new Response(
         JSON.stringify({ error: 'Solo médicos pueden crear invitaciones' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Get doctor's name from profiles (only for display purposes)
+    const { data: userData } = await supabaseClient
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
 
     // Generar código único
     let invitationCode = generateInvitationCode();
@@ -97,7 +110,7 @@ serve(async (req) => {
         success: true,
         invitation_code: invitationCode,
         invitation_url: invitationUrl,
-        doctor_name: userData.full_name,
+        doctor_name: userData?.full_name ?? 'Doctor',
         message: 'Código de invitación generado. Compártelo con tu paciente.',
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

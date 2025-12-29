@@ -15,44 +15,31 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Usuario no autenticado: falta header de autorización");
+    // Properly authenticate user with Supabase auth (verifies JWT signature)
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: req.headers.get("Authorization")! },
+        },
+      }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      throw new Error("Usuario no autenticado");
     }
 
-    // Extraer el token JWT del header
-    const token = authHeader.replace("Bearer ", "");
-    
-    // Decodificar el JWT para obtener el user_id
-    const parts = token.split(".");
-    if (parts.length !== 3) {
-      throw new Error("Token JWT inválido");
-    }
-    
-    const payload = JSON.parse(atob(parts[1]));
-    const userId = payload.sub;
-    
-    if (!userId) {
-      throw new Error("Usuario no autenticado: token sin user_id");
-    }
-
+    const userId = user.id;
     console.log("Usuario autenticado:", userId);
 
     // Use service role client for usage tracking (bypasses RLS)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    // User client for user-specific queries
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
     );
 
     // ========== RATE LIMITING LOGIC ==========
