@@ -421,6 +421,15 @@ const Chat = () => {
               onChange={handleImageSelect}
               className="hidden"
             />
+
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={selectedImage ? "Enviar foto..." : "Escribe tu pregunta..."}
+              onKeyPress={(e) => e.key === "Enter" && !loading && handleSend()}
+              disabled={loading || !!selectedImage}
+              className="flex-1 text-base h-11 rounded-lg border-neutral-300 bg-neutral-50"
+            />
             
             {/* Camera button */}
             <Button
@@ -435,14 +444,6 @@ const Chat = () => {
               <Camera className="h-5 w-5 text-neutral-600" />
             </Button>
 
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={selectedImage ? "Enviar foto..." : "Escribe tu pregunta..."}
-              onKeyPress={(e) => e.key === "Enter" && !loading && handleSend()}
-              disabled={loading || !!selectedImage}
-              className="flex-1 text-base h-11 rounded-lg border-neutral-300 bg-neutral-50"
-            />
             <Button
               onClick={handleSend}
               disabled={loading || (!input.trim() && !selectedImage)}
