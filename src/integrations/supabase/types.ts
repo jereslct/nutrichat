@@ -232,6 +232,7 @@ export type Database = {
       user_usage: {
         Row: {
           created_at: string | null
+          daily_image_count: number
           daily_query_count: number
           id: string
           last_query_date: string
@@ -240,6 +241,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          daily_image_count?: number
           daily_query_count?: number
           id?: string
           last_query_date?: string
@@ -248,6 +250,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          daily_image_count?: number
           daily_query_count?: number
           id?: string
           last_query_date?: string
