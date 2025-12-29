@@ -31,7 +31,18 @@ export const DoctorSelector = () => {
 
   const fetchDoctors = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke("get-all-doctors");
+      // Verificar sesión antes de llamar a la función
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("get-all-doctors", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       if (error) throw error;
       setDoctors(data.doctors || []);
       setCurrentDoctorId(data.current_doctor_id);
@@ -54,8 +65,14 @@ export const DoctorSelector = () => {
   const handleSendRequest = async (doctorId: string) => {
     setProcessingId(doctorId);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No autenticado");
+
       const { data, error } = await supabase.functions.invoke("handle-link-request", {
         body: { action: "send_request", target_id: doctorId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
@@ -81,8 +98,14 @@ export const DoctorSelector = () => {
   const handleAcceptRequest = async (requestId: string) => {
     setProcessingId(requestId);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No autenticado");
+
       const { data, error } = await supabase.functions.invoke("handle-link-request", {
         body: { action: "accept_request", request_id: requestId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
