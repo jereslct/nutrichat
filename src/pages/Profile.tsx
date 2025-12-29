@@ -74,6 +74,27 @@ const Profile = () => {
   });
 
   useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        
+        if (!session) {
+          // Limpiar estado cuando el usuario cierra sesión
+          setProfile(null);
+          setDiet(null);
+          setIsEditing(false);
+          navigate("/auth");
+        } else if (event === 'SIGNED_IN') {
+          // Cargar datos solo cuando hay un nuevo login
+          setTimeout(() => {
+            loadUserData(session.user.id);
+          }, 0);
+        }
+      }
+    );
+
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) {
@@ -83,12 +104,7 @@ const Profile = () => {
       }
     });
 
-    supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      if (!session) {
-        navigate("/auth");
-      }
-    });
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const loadUserData = async (userId: string) => {
