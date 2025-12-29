@@ -4,7 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Send, LogOut, Upload, Loader2, Bot, User as UserIcon, UserCircle, Camera, X, Image as ImageIcon } from "lucide-react";
+import { Send, LogOut, Upload, Loader2, Bot, User as UserIcon, UserCircle, Camera, X, Image as ImageIcon, ImagePlus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Session } from "@supabase/supabase-js";
 
 interface Message {
@@ -23,6 +29,7 @@ const Chat = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -412,9 +419,16 @@ const Chat = () => {
           )}
           
           <div className="flex gap-3">
-            {/* Hidden file input */}
+            {/* Hidden file inputs */}
             <input
               ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              className="hidden"
+            />
+            <input
+              ref={cameraInputRef}
               type="file"
               accept="image/*"
               capture="environment"
@@ -431,18 +445,31 @@ const Chat = () => {
               className="flex-1 text-base h-11 rounded-lg border-neutral-300 bg-neutral-50"
             />
             
-            {/* Camera button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={loading}
-              className="h-11 w-11 shrink-0 border-neutral-300"
-              title="Subir foto de comida"
-            >
-              <Camera className="h-5 w-5 text-neutral-600" />
-            </Button>
+            {/* Camera/Gallery dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={loading}
+                  className="h-11 w-11 shrink-0 border-neutral-300"
+                  title="Subir foto de comida"
+                >
+                  <Camera className="h-5 w-5 text-neutral-600" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => cameraInputRef.current?.click()} className="cursor-pointer">
+                  <Camera className="h-4 w-4 mr-2" />
+                  Tomar foto
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
+                  <ImagePlus className="h-4 w-4 mr-2" />
+                  Elegir de galería
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Button
               onClick={handleSend}
