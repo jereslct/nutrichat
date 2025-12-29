@@ -43,17 +43,12 @@ const Index = () => {
                 </span>
               </div>
 
-              <h1 className="text-display leading-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-tight tracking-tight text-neutral-900">
                 Tu dieta no falla por falta de voluntad. <br className="hidden sm:block" />
-                Falla por falta de <span className="text-primary relative whitespace-nowrap">
-                  organización
-                  <svg className="absolute w-full h-3 -bottom-1 left-0 text-primary/20" viewBox="0 0 100 10" preserveAspectRatio="none">
-                    <path d="M0 5 Q 50 10 100 5" stroke="currentColor" strokeWidth="8" fill="none" />
-                  </svg>
-                </span>.
+                Falla por falta de <span className="text-primary">organización</span>.
               </h1>
 
-              <p className="text-body-large max-w-2xl mx-auto text-neutral-600">
+              <p className="text-lg md:text-xl max-w-2xl mx-auto text-neutral-600">
                 Los PDFs estáticos son imposibles de seguir en la vida real. 
                 FoodTalk convierte tu plan nutricional en un <strong>Asistente Ejecutivo</strong> que organiza tus compras, recetas y decisiones difíciles por ti.
               </p>
@@ -63,7 +58,7 @@ const Index = () => {
               <Button
                 size="lg"
                 onClick={() => navigate("/auth")}
-                className="bg-primary hover:bg-primary/90 text-white h-14 px-8 text-lg shadow-lg shadow-primary/20 transition-transform hover:scale-105"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 px-8 text-lg shadow-lg transition-transform hover:scale-105"
               >
                 Convertir mi PDF en Acción
                 <ArrowRight className="h-5 w-5 ml-2" />
@@ -74,7 +69,7 @@ const Index = () => {
           </div>
 
           <div className="py-12 border-t border-neutral-100">
-            <h2 className="text-heading-3 text-center text-neutral-900 mb-10">
+            <h2 className="text-2xl md:text-3xl font-semibold text-center text-neutral-900 mb-10">
               ¿Por qué es tan difícil seguir el plan?
             </h2>
             <div className="grid md:grid-cols-3 gap-6">
@@ -98,7 +93,7 @@ const Index = () => {
 
           <div className="py-16 sm:py-24 space-y-12">
             <div>
-              <h2 className="text-heading-2 text-center mb-4 text-neutral-900">
+              <h2 className="text-2xl md:text-3xl font-semibold text-center mb-4 text-neutral-900">
                 Tu nueva "Prótesis Cognitiva"
               </h2>
               <p className="text-center text-neutral-600 max-w-2xl mx-auto">
@@ -111,11 +106,11 @@ const Index = () => {
                 <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-6">
                   <ShoppingBasket className="h-7 w-7 text-green-600" />
                 </div>
-                <h3 className="text-heading-3 text-neutral-900 mb-3">
+                <h3 className="text-xl font-semibold text-neutral-900 mb-3">
                   Compras en 1 Clic
                 </h3>
-                <p className="text-body text-neutral-600">
-                  La IA lee tu PDF y genera la lista de supermercado exacta, organizada por pasillos. Evita comprar cosas que no necesitas.
+                <p className="text-neutral-600">
+                  La IA lee tu PDF y genera la lista de supermercado exacta, organizada por pasillos.
                 </p>
               </div>
 
@@ -123,11 +118,11 @@ const Index = () => {
                 <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-6">
                   <Clock className="h-7 w-7 text-blue-600" />
                 </div>
-                <h3 className="text-heading-3 text-neutral-900 mb-3">
+                <h3 className="text-xl font-semibold text-neutral-900 mb-3">
                   Soporte Instantáneo
                 </h3>
-                <p className="text-body text-neutral-600">
-                  ¿Estás en un restaurante? Sácale una foto al menú. FoodTalk te dirá qué plato pedir para cumplir tus objetivos hoy.
+                <p className="text-neutral-600">
+                  ¿Estás en un restaurante? Sácale una foto al menú. FoodTalk te dirá qué plato pedir.
                 </p>
               </div>
 
@@ -135,43 +130,41 @@ const Index = () => {
                 <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mb-6">
                   <Brain className="h-7 w-7 text-purple-600" />
                 </div>
-                <h3 className="text-heading-3 text-neutral-900 mb-3">
+                <h3 className="text-xl font-semibold text-neutral-900 mb-3">
                   Traductor Nutricional
                 </h3>
-                <p className="text-body text-neutral-600">
-                  Convierte el "nutriñol" complejo en explicaciones simples. Aprende a comer sin necesidad de un título universitario.
+                <p className="text-neutral-600">
+                  Convierte el "nutriñol" complejo en explicaciones simples.
                 </p>
               </div>
             </div>
           </div>
 
           <div className="bg-neutral-900 rounded-3xl p-8 sm:p-12 text-center text-white mb-20 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary via-neutral-900 to-neutral-900"></div>
-            
             <div className="relative z-10 space-y-6">
               <ShieldCheck className="h-12 w-12 text-primary mx-auto" />
               <h2 className="text-2xl sm:text-3xl font-bold">Sin Alucinaciones. 100% Tu Plan.</h2>
               <p className="text-neutral-300 max-w-2xl mx-auto text-lg">
-                Usamos tecnología RAG (Retrieval-Augmented Generation). A diferencia de ChatGPT genérico, FoodTalk 
-                <strong> solo</strong> usa la información clínica que subes en tu PDF. No inventamos dietas, ejecutamos la de tu doctor.
+                Usamos tecnología RAG. A diferencia de ChatGPT genérico, FoodTalk 
+                <strong> solo</strong> usa la información clínica que subes en tu PDF.
               </p>
             </div>
           </div>
 
           <div className="py-16 text-center space-y-8">
             <div className="space-y-3">
-              <h2 className="text-heading-2 text-neutral-900">
+              <h2 className="text-2xl md:text-3xl font-semibold text-neutral-900">
                 Deja de luchar contra tu memoria
               </h2>
-              <p className="text-body-large text-neutral-600 max-w-xl mx-auto">
-                Tu salud merece más que un papel arrugado en el bolsillo. <br/>Digitaliza tu nutrición hoy mismo.
+              <p className="text-lg text-neutral-600 max-w-xl mx-auto">
+                Tu salud merece más que un papel arrugado en el bolsillo.
               </p>
             </div>
 
             <Button
               size="lg"
               onClick={() => navigate("/auth")}
-              className="bg-primary hover:bg-primary/90 text-white h-12 px-10 text-lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-10 text-lg"
             >
               Comenzar Gratis
               <ArrowRight className="h-4 w-4 ml-2" />
