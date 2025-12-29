@@ -17,6 +17,7 @@ serve(async (req) => {
   }
 
   try {
+    // Properly authenticate user with Supabase auth (verifies JWT signature)
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -27,26 +28,14 @@ serve(async (req) => {
       }
     );
 
-    // Extraer el user_id del JWT que ya fue verificado por Supabase
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("No se proporcionó token de autorización");
-    }
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
-    // Decodificar el JWT para obtener el user_id
-    const token = authHeader.replace("Bearer ", "");
-    const parts = token.split(".");
-    if (parts.length !== 3) {
-      throw new Error("Token inválido");
-    }
-    
-    const payload = JSON.parse(atob(parts[1]));
-    const userId = payload.sub;
-
-    if (!userId) {
+    if (authError || !user) {
+      console.error("Auth error:", authError);
       throw new Error("Usuario no autenticado");
     }
 
+    const userId = user.id;
     console.log("Usuario autenticado:", userId);
 
     const { pdf, fileName } = await req.json();
