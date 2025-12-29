@@ -153,19 +153,25 @@ const Chat = () => {
     }
   };
 
-  const handleSendImage = async () => {
+  const handleSendImage = async (optionalText?: string) => {
     if (!selectedImage || !session || !dietId) return;
 
+    const displayText = optionalText?.trim() 
+      ? `📷 ${optionalText.trim()}` 
+      : "📷 Foto de comida enviada";
+    
     const userMessage: Message = { 
       role: "user", 
-      content: "📷 Foto de comida enviada",
+      content: displayText,
       imageUrl: selectedImage 
     };
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
 
     const imageToSend = selectedImage;
+    const textToSend = optionalText?.trim() || "";
     clearSelectedImage();
+    setInput(""); // Clear input after sending
 
     try {
       // Save user message
@@ -173,7 +179,7 @@ const Chat = () => {
         user_id: session.user.id,
         diet_id: dietId,
         role: "user",
-        content: "[Imagen de comida]",
+        content: textToSend ? `[Imagen de comida] ${textToSend}` : "[Imagen de comida]",
       });
 
       // Analyze image
@@ -181,6 +187,7 @@ const Chat = () => {
         body: {
           imageBase64: imageToSend,
           dietId: dietId,
+          userComment: textToSend, // Pass optional text to the edge function
         },
         headers: {
           Authorization: `Bearer ${session.access_token}`
@@ -223,9 +230,9 @@ const Chat = () => {
   };
 
   const handleSend = async () => {
-    // If there's an image selected, send image instead
+    // If there's an image selected, send image with optional text
     if (selectedImage) {
-      await handleSendImage();
+      await handleSendImage(input);
       return;
     }
 
@@ -459,47 +466,50 @@ const Chat = () => {
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={selectedImage ? "Enviar foto..." : "Escribe tu pregunta..."}
+              placeholder={selectedImage ? "Agrega un comentario (opcional)..." : "Escribe tu pregunta..."}
               onKeyPress={(e) => e.key === "Enter" && !loading && handleSend()}
-              disabled={loading || !!selectedImage}
+              disabled={loading}
               className="flex-1 text-base h-11 rounded-lg border-neutral-300 bg-neutral-50"
             />
             
-            {/* Camera/Gallery dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  disabled={loading}
-                  className="h-11 w-11 shrink-0 border-neutral-300"
-                  title="Subir foto de comida"
-                >
-                  <Camera className="h-5 w-5 text-neutral-600" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => cameraInputRef.current?.click()} className="cursor-pointer">
-                  <Camera className="h-4 w-4 mr-2" />
-                  Tomar foto
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
-                  <ImagePlus className="h-4 w-4 mr-2" />
-                  Elegir de galería
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Camera/Gallery dropdown - hide when image is selected */}
+            {!selectedImage && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={loading}
+                    className="h-11 w-11 shrink-0 border-neutral-300"
+                    title="Subir foto de comida"
+                  >
+                    <Camera className="h-5 w-5 text-neutral-600" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => cameraInputRef.current?.click()} className="cursor-pointer">
+                    <Camera className="h-4 w-4 mr-2" />
+                    Tomar foto
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
+                    <ImagePlus className="h-4 w-4 mr-2" />
+                    Elegir de galería
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             <Button
               onClick={handleSend}
               disabled={loading || (!input.trim() && !selectedImage)}
-              className="bg-primary hover:bg-primary/90 text-white px-4 h-11 interactive"
+              className={selectedImage 
+                ? "bg-green-600 hover:bg-green-700 text-white px-4 h-11 interactive" 
+                : "bg-primary hover:bg-primary/90 text-white px-4 h-11 interactive"
+              }
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
-              ) : selectedImage ? (
-                <ImageIcon className="h-4 w-4" />
               ) : (
                 <Send className="h-4 w-4" />
               )}
