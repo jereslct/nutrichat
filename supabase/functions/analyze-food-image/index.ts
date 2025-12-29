@@ -15,39 +15,30 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("Usuario no autenticado");
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const parts = token.split(".");
-    if (parts.length !== 3) {
-      throw new Error("Token JWT inválido");
-    }
-    
-    const payload = JSON.parse(atob(parts[1]));
-    const userId = payload.sub;
-    
-    if (!userId) {
-      throw new Error("Usuario no autenticado");
-    }
-
-    console.log("Usuario autenticado para análisis de imagen:", userId);
-
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
+    // Properly authenticate user with Supabase auth (verifies JWT signature)
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: { Authorization: authHeader },
+          headers: { Authorization: req.headers.get("Authorization")! },
         },
       }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      throw new Error("Usuario no autenticado");
+    }
+
+    const userId = user.id;
+    console.log("Usuario autenticado para análisis de imagen:", userId);
+
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
     // ========== RATE LIMITING FOR IMAGES ==========
