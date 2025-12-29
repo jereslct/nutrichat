@@ -27,6 +27,7 @@ const Chat = () => {
   const [dietId, setDietId] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -34,21 +35,40 @@ const Chat = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      if (!session) {
-        navigate("/auth");
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        
+        if (!session) {
+          // Limpiar estado cuando el usuario cierra sesión
+          setMessages([]);
+          setDietId(null);
+          setInput("");
+          setSelectedImage(null);
+          setImageFile(null);
+          navigate("/auth");
+        } else if (event === 'SIGNED_IN') {
+          // Cargar datos solo cuando hay un nuevo login
+          setTimeout(() => {
+            loadDietAndMessages(session.user.id);
+          }, 0);
+        }
       }
-    });
+    );
 
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setIsInitialized(true);
       if (!session) {
         navigate("/auth");
       } else {
         loadDietAndMessages(session.user.id);
       }
     });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   useEffect(() => {

@@ -23,6 +23,42 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // Defer navigation to avoid deadlock
+          setTimeout(async () => {
+            // Check user role from secure user_roles table
+            const { data: roleData } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", session.user.id)
+              .single();
+
+            if (roleData?.role === "doctor") {
+              navigate("/dashboard");
+              return;
+            }
+
+            // For patients, check if they have a diet loaded
+            const { data: diets } = await supabase
+              .from("diets")
+              .select("id")
+              .eq("user_id", session.user.id)
+              .limit(1);
+            
+            if (diets && diets.length > 0) {
+              navigate("/chat");
+            } else {
+              navigate("/upload");
+            }
+          }, 0);
+        }
+      }
+    );
+
+    // THEN check for existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         // Check user role first from secure user_roles table
@@ -51,6 +87,8 @@ const Auth = () => {
         }
       }
     });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
