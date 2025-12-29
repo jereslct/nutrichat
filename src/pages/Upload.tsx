@@ -30,13 +30,28 @@ const Upload = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      if (!session) {
-        navigate("/auth");
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        
+        if (!session) {
+          // Limpiar estado cuando el usuario cierra sesión
+          setFile(null);
+          setExistingDiet(null);
+          setUploadProgress(0);
+          setUploadStatus("");
+          navigate("/auth");
+        } else if (event === 'SIGNED_IN') {
+          // Cargar datos solo cuando hay un nuevo login
+          setTimeout(() => {
+            checkExistingDiet(session.user.id);
+          }, 0);
+        }
       }
-    });
+    );
 
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) {
@@ -45,6 +60,8 @@ const Upload = () => {
         checkExistingDiet(session.user.id);
       }
     });
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   const checkExistingDiet = async (userId: string) => {

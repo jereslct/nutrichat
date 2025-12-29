@@ -60,28 +60,36 @@ export const useUserRole = () => {
 
     fetchUserAndRole();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_OUT") {
         setState({ user: null, role: null, loading: false, profile: null });
       } else if (session?.user) {
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .single();
+        // Defer Supabase calls with setTimeout to avoid deadlock
+        setTimeout(async () => {
+          try {
+            const { data: roleData } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", session.user.id)
+              .single();
 
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("full_name, avatar_url")
-          .eq("id", session.user.id)
-          .single();
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("full_name, avatar_url")
+              .eq("id", session.user.id)
+              .single();
 
-        setState({
-          user: session.user,
-          role: (roleData?.role as AppRole) || null,
-          loading: false,
-          profile: profileData,
-        });
+            setState({
+              user: session.user,
+              role: (roleData?.role as AppRole) || null,
+              loading: false,
+              profile: profileData,
+            });
+          } catch (error) {
+            console.error("Error fetching user role on auth change:", error);
+            setState({ user: session.user, role: null, loading: false, profile: null });
+          }
+        }, 0);
       }
     });
 
