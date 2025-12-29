@@ -229,6 +229,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_usage: {
+        Row: {
+          created_at: string | null
+          daily_query_count: number
+          id: string
+          last_query_date: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          daily_query_count?: number
+          id?: string
+          last_query_date?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          daily_query_count?: number
+          id?: string
+          last_query_date?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
