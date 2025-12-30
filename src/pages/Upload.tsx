@@ -45,7 +45,7 @@ const Upload = () => {
           setExistingDiet(null);
           setUploadProgress(0);
           setUploadStatus("");
-          navigate("/auth");
+          navigate("/register");
         } else if (event === 'SIGNED_IN') {
           // Cargar datos solo cuando hay un nuevo login
           setTimeout(() => {
@@ -59,7 +59,7 @@ const Upload = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) {
-        navigate("/auth");
+        navigate("/register");
       } else {
         checkExistingDiet(session.user.id);
       }
@@ -255,7 +255,7 @@ const Upload = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    navigate("/register");
   };
 
   return (

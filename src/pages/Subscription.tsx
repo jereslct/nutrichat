@@ -19,7 +19,7 @@ const Subscription = () => {
       (event, session) => {
         setSession(session);
         if (!session) {
-          navigate("/auth");
+          navigate("/register");
         } else if (event === 'SIGNED_IN') {
           setTimeout(() => loadProfile(session.user.id), 0);
         }
@@ -29,7 +29,7 @@ const Subscription = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) {
-        navigate("/auth");
+        navigate("/register");
       } else {
         loadProfile(session.user.id);
       }
@@ -64,7 +64,7 @@ const Subscription = () => {
           description: "Por favor, inicia sesión nuevamente",
           variant: "destructive",
         });
-        navigate("/auth");
+        navigate("/register");
         return;
       }
 

@@ -26,7 +26,7 @@ const Index = () => {
           </div>
           <Button
             size="sm"
-            onClick={() => navigate("/auth")}
+            onClick={() => navigate("/register")}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm"
           >
             Iniciar Sesión
@@ -57,7 +57,7 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
               <Button
                 size="lg"
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/register")}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground h-14 px-8 text-lg shadow-lg transition-transform hover:scale-105"
               >
                 Convertir mi PDF en Acción
@@ -163,7 +163,7 @@ const Index = () => {
 
             <Button
               size="lg"
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/register")}
               className="bg-primary hover:bg-primary/90 text-primary-foreground h-12 px-10 text-lg"
             >
               Comenzar Gratis

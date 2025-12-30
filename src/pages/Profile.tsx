@@ -84,7 +84,7 @@ const Profile = () => {
           setProfile(null);
           setDiet(null);
           setIsEditing(false);
-          navigate("/auth");
+          navigate("/register");
         } else if (event === 'SIGNED_IN') {
           // Cargar datos solo cuando hay un nuevo login
           setTimeout(() => {
@@ -98,7 +98,7 @@ const Profile = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) {
-        navigate("/auth");
+        navigate("/register");
       } else {
         loadUserData(session.user.id);
       }
