@@ -12,13 +12,24 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user
+    const authHeader = req.headers.get("Authorization");
+    console.log("Auth header present:", !!authHeader);
+    
+    if (!authHeader) {
+      console.error("No authorization header");
+      return new Response(
+        JSON.stringify({ error: "Usuario no autenticado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Authenticate user using the token directly
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
+          headers: { Authorization: authHeader },
         },
       }
     );
