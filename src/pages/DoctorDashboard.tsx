@@ -31,6 +31,7 @@ import {
   LogOut,
   User,
   Loader2,
+  CreditCard,
 } from "lucide-react";
 import { LinkRequestsNotification } from "@/components/LinkRequestsNotification";
 import { AllPatientsDialog } from "@/components/AllPatientsDialog";
@@ -222,6 +223,10 @@ const DoctorDashboard = () => {
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
                   <User className="mr-2 h-4 w-4" />
                   Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/subscription")}>
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Suscripción
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
