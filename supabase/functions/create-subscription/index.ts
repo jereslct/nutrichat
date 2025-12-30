@@ -55,6 +55,30 @@ serve(async (req) => {
       throw new Error("MercadoPago access token not configured");
     }
 
+    // Debug: verify that the MercadoPago account/token matches Argentina (MLA)
+    try {
+      const meRes = await fetch("https://api.mercadopago.com/users/me", {
+        headers: { Authorization: `Bearer ${MERCADOPAGO_ACCESS_TOKEN}` },
+      });
+
+      if (meRes.ok) {
+        const me = await meRes.json();
+        console.log("MercadoPago account context:", {
+          id: me?.id,
+          site_id: me?.site_id,
+          country_id: me?.country_id,
+        });
+      } else {
+        console.warn(
+          "MercadoPago /users/me failed:",
+          meRes.status,
+          await meRes.text(),
+        );
+      }
+    } catch (e) {
+      console.warn("MercadoPago /users/me error:", e);
+    }
+
     // Get the origin from the request
     const origin = req.headers.get("origin") || "https://coghazfvffthyrjsifrm.lovableproject.com";
 
@@ -75,6 +99,7 @@ serve(async (req) => {
     };
 
     console.log("Creating MercadoPago subscription...");
+    console.log("MercadoPago payload:", JSON.stringify(subscriptionData));
 
     const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
