@@ -6,19 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Leaf, Loader2 } from "lucide-react";
+import { Leaf, Loader2, User, Stethoscope } from "lucide-react";
 import { z } from "zod";
 
 const emailSchema = z.string().email("Email inválido").max(255);
 const passwordSchema = z.string().min(6, "La contraseña debe tener al menos 6 caracteres").max(100);
 const nameSchema = z.string().trim().min(1, "El nombre es requerido").max(100);
 
-const Auth = () => {
+type UserRole = "patient" | "doctor";
+
+const Register = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<UserRole>("patient");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -151,7 +154,7 @@ const Auth = () => {
           }
         }
       } else {
-        // Signup - Only patients can self-register
+        // Signup
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -159,7 +162,7 @@ const Auth = () => {
             emailRedirectTo: `${window.location.origin}/`,
             data: {
               full_name: fullName,
-              role: "patient", // Always patient for self-registration
+              role: role,
             },
           },
         });
@@ -182,8 +185,12 @@ const Auth = () => {
           description: "Tu cuenta ha sido creada. Redirigiendo...",
         });
         
-        // Always redirect to upload for new patients
-        navigate("/upload");
+        // Redirect based on role
+        if (role === "doctor") {
+          navigate("/dashboard");
+        } else {
+          navigate("/upload");
+        }
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -217,25 +224,60 @@ const Auth = () => {
             NutriChat
           </CardTitle>
           <CardDescription className="text-base">
-            {isLogin ? "Inicia sesión en tu cuenta" : "Crea tu cuenta de paciente"}
+            {isLogin ? "Inicia sesión en tu cuenta" : "Crea tu cuenta"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
             {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Nombre completo</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  placeholder="Juan Pérez"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required={!isLogin}
-                  disabled={loading}
-                  className="transition-all"
-                />
-              </div>
+              <>
+                {/* Role Selector */}
+                <div className="space-y-2">
+                  <Label>Tipo de cuenta</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setRole("patient")}
+                      disabled={loading}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                        role === "patient"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <User className="h-6 w-6" />
+                      <span className="text-sm font-medium">Soy Paciente</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole("doctor")}
+                      disabled={loading}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                        role === "doctor"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Stethoscope className="h-6 w-6" />
+                      <span className="text-sm font-medium">Soy Médico</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Nombre completo</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Juan Pérez"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    required={!isLogin}
+                    disabled={loading}
+                    className="transition-all"
+                  />
+                </div>
+              </>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -290,4 +332,4 @@ const Auth = () => {
   );
 };
 
-export default Auth;
+export default Register;
