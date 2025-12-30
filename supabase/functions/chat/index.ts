@@ -16,22 +16,44 @@ serve(async (req) => {
   }
 
   try {
+    // Get and validate Authorization header
+    const authHeader = req.headers.get("Authorization");
+    console.log("Auth header present:", !!authHeader);
+    
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("Missing or invalid Authorization header");
+      return new Response(
+        JSON.stringify({ error: "Token de autorización no proporcionado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "").trim();
+    console.log("Token length:", token.length);
+
     // Properly authenticate user with Supabase auth (verifies JWT signature)
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
+          headers: { Authorization: authHeader },
         },
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        }
       }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
 
     if (authError || !user) {
       console.error("Auth error:", authError);
-      throw new Error("Usuario no autenticado");
+      return new Response(
+        JSON.stringify({ error: "Token inválido o expirado. Por favor inicia sesión nuevamente." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const userId = user.id;
