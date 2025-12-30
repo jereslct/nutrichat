@@ -122,13 +122,13 @@ const Subscription = () => {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
             <Sparkles className="h-4 w-4" />
-            {isSubscribed ? "Eres usuario PRO" : "Desbloquea todo el potencial"}
+            {isSubscribed ? "Eres usuario PRO" : "Accede a la experiencia completa"}
           </div>
           <h2 className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-4">
             NutriChat <span className="text-amber-500">PRO</span>
           </h2>
           <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-            Tu asistente nutricional personal, sin límites. 
+            Tu asistente nutricional personal, siempre disponible. 
             Chatea, analiza fotos y alcanza tus metas de salud.
           </p>
         </div>
@@ -170,8 +170,8 @@ const Subscription = () => {
 
               <ul className="space-y-4 text-left">
                 {[
-                  { icon: MessageCircle, text: "Chats ilimitados con tu asistente" },
-                  { icon: Camera, text: "Análisis de fotos ilimitado" },
+                  { icon: MessageCircle, text: "Acceso completo al chat con tu asistente" },
+                  { icon: Camera, text: "Análisis detallado de tus comidas con IA" },
                   { icon: Zap, text: "Respuestas prioritarias" },
                   { icon: Shield, text: "Soporte premium" },
                 ].map((feature) => (
@@ -195,7 +195,7 @@ const Subscription = () => {
                     ¡Ya eres PRO!
                   </p>
                   <p className="text-sm text-green-600">
-                    Disfruta de acceso ilimitado
+                    Disfruta de acceso completo
                   </p>
                   <Button
                     onClick={() => navigate("/chat")}
@@ -234,8 +234,8 @@ const Subscription = () => {
           {[
             {
               icon: MessageCircle,
-              title: "Chats sin límites",
-              description: "Pregunta todo lo que necesites sobre tu plan nutricional, sin restricciones."
+              title: "Chat continuo",
+              description: "Pregunta lo que necesites sobre tu plan nutricional y mantén el seguimiento día a día."
             },
             {
               icon: Camera,
