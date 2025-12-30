@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const DAILY_QUERY_LIMIT = 9;
+const FREE_CHAT_LIMIT = 5;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -42,7 +43,34 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // ========== RATE LIMITING LOGIC ==========
+    // ========== CHECK PREMIUM STATUS ==========
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("is_premium, chat_count")
+      .eq("id", userId)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching profile:", profileError);
+      throw new Error("Error al verificar el perfil del usuario");
+    }
+
+    // Check if user has reached free chat limit
+    if (!profile.is_premium && profile.chat_count >= FREE_CHAT_LIMIT) {
+      console.log(`Usuario ${userId} ha alcanzado el límite gratuito: ${profile.chat_count}/${FREE_CHAT_LIMIT}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "LIMIT_REACHED",
+          message: "Has alcanzado tus 5 chats gratuitos. Pasa a PRO para continuar."
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // ========== RATE LIMITING LOGIC (daily limit for all users) ==========
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     
     // Get current usage for user
@@ -245,6 +273,20 @@ Instrucciones:
 
       if (insertError) {
         console.error("Error inserting usage:", insertError);
+      }
+    }
+
+    // ========== INCREMENT CHAT COUNT (for freemium tracking) ==========
+    if (!profile.is_premium) {
+      const { error: chatCountError } = await supabaseAdmin
+        .from("profiles")
+        .update({ chat_count: profile.chat_count + 1 })
+        .eq("id", userId);
+
+      if (chatCountError) {
+        console.error("Error updating chat count:", chatCountError);
+      } else {
+        console.log(`Usuario ${userId} - Chat count: ${profile.chat_count + 1}/${FREE_CHAT_LIMIT}`);
       }
     }
 

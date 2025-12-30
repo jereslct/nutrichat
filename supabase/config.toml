@@ -29,3 +29,9 @@ verify_jwt = true
 
 [functions.analyze-food-image]
 verify_jwt = true
+
+[functions.create-preference]
+verify_jwt = true
+
+[functions.payment-webhook]
+verify_jwt = false
