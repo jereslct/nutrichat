@@ -51,7 +51,7 @@ serve(async (req) => {
       );
     }
 
-    // Obtener IDs de doctores desde user_roles
+    // Obtener IDs de doctores desde user_roles (excluyendo super_admin)
     const { data: doctorRoles, error: rolesError } = await serviceClient
       .from('user_roles')
       .select('user_id')
@@ -59,7 +59,18 @@ serve(async (req) => {
 
     if (rolesError) throw rolesError;
 
-    const doctorIds = (doctorRoles || []).map((r: any) => r.user_id);
+    // Obtener IDs de super_admins para excluirlos
+    const { data: superAdminRoles } = await serviceClient
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'super_admin');
+
+    const superAdminIds = new Set((superAdminRoles || []).map((r: any) => r.user_id));
+
+    // Filtrar doctores que no sean super_admin
+    const doctorIds = (doctorRoles || [])
+      .map((r: any) => r.user_id)
+      .filter((id: string) => !superAdminIds.has(id));
 
     if (doctorIds.length === 0) {
       return new Response(
