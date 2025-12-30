@@ -77,12 +77,13 @@ serve(async (req) => {
 
     if (doctorsError) throw doctorsError;
 
-    // Obtener relación actual del paciente
-    const { data: existingRelation } = await serviceClient
+    // Obtener todas las relaciones del paciente (puede tener múltiples médicos)
+    const { data: existingRelations } = await serviceClient
       .from('doctor_patients')
       .select('doctor_id')
-      .eq('patient_id', user.id)
-      .maybeSingle();
+      .eq('patient_id', user.id);
+    
+    const linkedDoctorIds = (existingRelations || []).map((r: any) => r.doctor_id);
 
     // Obtener solicitudes pendientes
     const { data: pendingRequests } = await serviceClient
@@ -93,7 +94,7 @@ serve(async (req) => {
 
     // Enriquecer datos de doctores
     const doctorsData = (allDoctors || []).map((doctor: any) => {
-      const isLinked = existingRelation?.doctor_id === doctor.id;
+      const isLinked = linkedDoctorIds.includes(doctor.id);
 
       const pendingRequest = (pendingRequests || []).find(
         (r: any) => 
@@ -119,7 +120,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         doctors: doctorsData,
-        current_doctor_id: existingRelation?.doctor_id || null,
+        current_doctor_id: linkedDoctorIds.length > 0 ? linkedDoctorIds[0] : null,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
