@@ -52,14 +52,25 @@ const Subscription = () => {
   };
 
   const handleSubscribe = async () => {
-    if (!session) return;
-    
     setLoading(true);
     
     try {
+      // Get fresh session to ensure we have a valid token
+      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !currentSession) {
+        toast({
+          title: "Sesión expirada",
+          description: "Por favor, inicia sesión nuevamente",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("create-subscription", {
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${currentSession.access_token}`,
         },
       });
 
