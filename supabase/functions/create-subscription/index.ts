@@ -87,7 +87,10 @@ serve(async (req) => {
     const subscriptionData = {
       reason: "FoodTalk PRO - Suscripción Mensual",
       external_reference: user.id, // Store user_id for webhook identification
-      payer_email: user.email,
+      // IMPORTANT: Do NOT send payer_email if the user email is not registered in MercadoPago
+      // or if it's registered in a different country than the Access Token's site_id (MLA = Argentina).
+      // Instead, let the user enter their email during checkout or omit payer_email entirely.
+      // payer_email: user.email, // <- REMOVED to avoid "Cannot operate between different countries"
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
