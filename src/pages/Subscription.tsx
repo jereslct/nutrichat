@@ -164,7 +164,7 @@ const Subscription = () => {
               </div>
               
               <div className="mb-6">
-                <span className="text-5xl font-bold text-neutral-900">$2.999</span>
+                <span className="text-5xl font-bold text-neutral-900">$16.999</span>
                 <span className="text-xl text-neutral-500">/mes</span>
               </div>
 

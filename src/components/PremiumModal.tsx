@@ -107,7 +107,7 @@ export const PremiumModal = ({ open, onOpenChange }: PremiumModalProps) => {
 
           <div className="text-center">
             <div className="text-3xl font-bold text-foreground">
-              $2.999<span className="text-lg font-normal text-muted-foreground">/mes</span>
+              $16.999<span className="text-lg font-normal text-muted-foreground">/mes</span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               Suscripción mensual recurrente
