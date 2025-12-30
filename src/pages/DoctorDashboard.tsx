@@ -226,7 +226,7 @@ const DoctorDashboard = () => {
                   <User className="mr-2 h-4 w-4" />
                   Perfil
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/subscription")}>
+                <DropdownMenuItem onClick={() => navigate("/subscription?tab=profesionales")}>
                   <CreditCard className="mr-2 h-4 w-4" />
                   Suscripción
                 </DropdownMenuItem>
@@ -269,7 +269,7 @@ const DoctorDashboard = () => {
           {/* Licenses usage indicator */}
           <Card 
             className="bg-white border-neutral-200 cursor-pointer hover:border-primary hover:shadow-md transition-all interactive"
-            onClick={() => navigate("/subscription")}
+            onClick={() => navigate("/subscription?tab=profesionales")}
           >
             <CardContent className="p-6">
               <div className="flex items-center gap-4 mb-3">

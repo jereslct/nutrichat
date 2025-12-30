@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -82,6 +82,7 @@ const Subscription = () => {
   const [planTier, setPlanTier] = useState<string | null>(null);
   const [licensesCount, setLicensesCount] = useState<number>(0);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -171,7 +172,8 @@ const Subscription = () => {
   };
 
   const isSubscribed = subscriptionStatus === "active";
-  const defaultTab = userRole === "doctor" ? "profesionales" : "pacientes";
+  const tabFromUrl = searchParams.get("tab");
+  const defaultTab = tabFromUrl || (userRole === "doctor" ? "profesionales" : "pacientes");
 
   const PlanCard = ({ plan, isDoctor = false }: { plan: PlanConfig; isDoctor?: boolean }) => (
     <div 
