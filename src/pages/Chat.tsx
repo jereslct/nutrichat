@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Session } from "@supabase/supabase-js";
 import { PremiumModal } from "@/components/PremiumModal";
-
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -30,6 +30,8 @@ const Chat = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +107,18 @@ const Chat = () => {
   }, [messages]);
 
   const loadDietAndMessages = async (userId: string) => {
+    // Load user profile for avatar
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("avatar_url, full_name")
+      .eq("id", userId)
+      .single();
+
+    if (profileData) {
+      setUserAvatar(profileData.avatar_url);
+      setUserName(profileData.full_name);
+    }
+
     const { data: diet } = await supabase
       .from("diets")
       .select("*")
@@ -138,6 +152,16 @@ const Chat = () => {
         content: msg.content,
       })));
     }
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return null;
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -461,9 +485,12 @@ const Chat = () => {
                   </div>
                 </div>
                 {msg.role === "user" && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
-                    <UserIcon className="h-5 w-5 text-primary" />
-                  </div>
+                  <Avatar className="flex-shrink-0 w-8 h-8 mt-0.5">
+                    <AvatarImage src={userAvatar || ""} alt="Tu avatar" />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                      {getInitials(userName) || <UserIcon className="h-4 w-4" />}
+                    </AvatarFallback>
+                  </Avatar>
                 )}
               </div>
             ))
