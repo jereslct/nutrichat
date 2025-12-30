@@ -12,18 +12,28 @@ const MAX_PDF_SIZE = 13 * 1024 * 1024;
 const MAX_FILENAME_LENGTH = 255;
 
 serve(async (req) => {
+  // Always handle CORS first
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("No Authorization header provided");
+      return new Response(
+        JSON.stringify({ error: "No se proporcionó token de autenticación" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Properly authenticate user with Supabase auth (verifies JWT signature)
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
+          headers: { Authorization: authHeader },
         },
       }
     );
@@ -32,7 +42,10 @@ serve(async (req) => {
 
     if (authError || !user) {
       console.error("Auth error:", authError);
-      throw new Error("Usuario no autenticado");
+      return new Response(
+        JSON.stringify({ error: "Usuario no autenticado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const userId = user.id;
