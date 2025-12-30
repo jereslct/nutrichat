@@ -1,5 +1,5 @@
 -- =====================================================
--- FOODTALK: Sistema Médico-Paciente
+-- NutriChat: Sistema Médico-Paciente
 -- Migración limpia con roles + invitaciones (ORDENADA)
 -- =====================================================
 

@@ -22,7 +22,7 @@ const Index = () => {
             <div className="p-2 bg-primary/10 rounded-lg">
               <Leaf className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             </div>
-            <span className="font-bold text-lg sm:text-xl text-neutral-900">FoodTalk</span>
+            <span className="font-bold text-lg sm:text-xl text-neutral-900">NutriChat</span>
           </div>
           <Button
             size="sm"
@@ -50,7 +50,7 @@ const Index = () => {
 
               <p className="text-lg md:text-xl max-w-2xl mx-auto text-neutral-600">
                 Los PDFs estáticos son imposibles de seguir en la vida real. 
-                FoodTalk convierte tu plan nutricional en un <strong>Asistente Ejecutivo</strong> que organiza tus compras, recetas y decisiones difíciles por ti.
+                NutriChat convierte tu plan nutricional en un <strong>Asistente Ejecutivo</strong> que organiza tus compras, recetas y decisiones difíciles por ti.
               </p>
             </div>
 
@@ -86,7 +86,7 @@ const Index = () => {
               <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100">
                 <MessageCircle className="h-10 w-10 text-orange-400 mb-4" />
                 <h3 className="font-bold text-neutral-900 mb-2">Dudas sin Respuesta</h3>
-                <p className="text-sm text-neutral-600">"¿Puedo comer esto?" Tu nutri no responde un sábado a las 9pm. FoodTalk sí.</p>
+                <p className="text-sm text-neutral-600">"¿Puedo comer esto?" Tu nutri no responde un sábado a las 9pm. NutriChat sí.</p>
               </div>
             </div>
           </div>
@@ -122,7 +122,7 @@ const Index = () => {
                   Soporte Instantáneo
                 </h3>
                 <p className="text-neutral-600">
-                  ¿Estás en un restaurante? Sácale una foto al menú. FoodTalk te dirá qué plato pedir.
+                  ¿Estás en un restaurante? Sácale una foto al menú. NutriChat te dirá qué plato pedir.
                 </p>
               </div>
 
@@ -145,7 +145,7 @@ const Index = () => {
               <ShieldCheck className="h-12 w-12 text-primary mx-auto" />
               <h2 className="text-2xl sm:text-3xl font-bold">Sin Alucinaciones. 100% Tu Plan.</h2>
               <p className="text-neutral-300 max-w-2xl mx-auto text-lg">
-                Usamos tecnología RAG. A diferencia de ChatGPT genérico, FoodTalk 
+                Usamos tecnología RAG. A diferencia de ChatGPT genérico, NutriChat 
                 <strong> solo</strong> usa la información clínica que subes en tu PDF.
               </p>
             </div>
@@ -173,7 +173,7 @@ const Index = () => {
         </div>
 
         <footer className="border-t border-neutral-200 py-8 mt-8 text-center text-sm text-neutral-500">
-          <p>© 2025 FoodTalk. Diseñado para simplificar tu vida saludable.</p>
+          <p>© 2025 NutriChat. Diseñado para simplificar tu vida saludable.</p>
         </footer>
       </div>
     </div>

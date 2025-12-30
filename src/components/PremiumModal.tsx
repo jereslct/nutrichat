@@ -89,7 +89,7 @@ export const PremiumModal = ({ open, onOpenChange }: PremiumModalProps) => {
 
         <div className="space-y-4 py-4">
           <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-            <h4 className="font-semibold text-foreground">Con FoodTalk PRO:</h4>
+            <h4 className="font-semibold text-foreground">Con NutriChat PRO:</h4>
             <ul className="space-y-2">
               {[
                 "Chats ilimitados con tu asistente",

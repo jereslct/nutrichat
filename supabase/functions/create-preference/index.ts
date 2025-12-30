@@ -47,11 +47,11 @@ serve(async (req) => {
     const preferenceData = {
       items: [
         {
-          title: "FoodTalk PRO - Plan Mensual",
+          title: "NutriChat PRO - Plan Mensual",
           description: "Acceso ilimitado a tu asistente nutricional",
           quantity: 1,
           currency_id: "ARS",
-          unit_price: 2999, // Price in ARS - adjust as needed
+          unit_price: 16999, // Price in ARS - adjust as needed
         }
       ],
       payer: {

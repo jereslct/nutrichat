@@ -182,7 +182,7 @@ const DoctorDashboard = () => {
               <Leaf className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             </div>
             <span className="font-bold text-lg sm:text-xl text-neutral-900">
-              FoodTalk
+              NutriChat
             </span>
             <Badge className="bg-primary/10 text-primary border-0 text-xs sm:text-sm">
               Médico

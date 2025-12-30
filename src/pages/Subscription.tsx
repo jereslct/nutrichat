@@ -125,7 +125,7 @@ const Subscription = () => {
             {isSubscribed ? "Eres usuario PRO" : "Desbloquea todo el potencial"}
           </div>
           <h2 className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-4">
-            FoodTalk <span className="text-amber-500">PRO</span>
+            NutriChat <span className="text-amber-500">PRO</span>
           </h2>
           <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
             Tu asistente nutricional personal, sin límites. 

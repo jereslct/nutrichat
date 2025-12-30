@@ -263,7 +263,7 @@ const Upload = () => {
       <header className="border-b border-neutral-200 bg-white sticky top-0 z-50">
         <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
           <h1 className="text-lg sm:text-xl font-bold text-neutral-900">
-            FoodTalk
+            NutriChat
           </h1>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => navigate("/profile")} size="sm" className="text-neutral-700 hover:bg-neutral-100">

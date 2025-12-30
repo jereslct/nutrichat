@@ -214,7 +214,7 @@ const Auth = () => {
             </div>
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            FoodTalk
+            NutriChat
           </CardTitle>
           <CardDescription className="text-base">
             {isLogin ? "Inicia sesión en tu cuenta" : "Crea tu cuenta de paciente"}

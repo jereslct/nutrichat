@@ -98,13 +98,13 @@ serve(async (req) => {
 
     const subscriptionPayload = {
       payer_email: user.email, // REQUIRED by MercadoPago
-      reason: "FoodTalk PRO - Suscripción Mensual",
+      reason: "NutriChat PRO - Suscripción Mensual",
       external_reference: user.id,
       back_url: `${origin}/chat?subscription=success`,
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
-        transaction_amount: 2999,
+        transaction_amount: 16999,
         currency_id: "ARS",
       },
       status: "pending",
