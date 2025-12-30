@@ -26,11 +26,11 @@ const Index = () => {
           </div>
           <Button
             size="sm"
-            variant="ghost"
             onClick={() => navigate("/auth")}
-            className="text-neutral-600 hover:text-primary"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium shadow-sm"
           >
             Iniciar Sesión
+            <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </nav>
 
