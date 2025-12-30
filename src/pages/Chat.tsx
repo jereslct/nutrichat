@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Send, LogOut, Upload, Loader2, Bot, User as UserIcon, UserCircle, Camera, X, Image as ImageIcon, ImagePlus } from "lucide-react";
+import { Send, LogOut, Upload, Loader2, Bot, User as UserIcon, UserCircle, Camera, X, Image as ImageIcon, ImagePlus, Crown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -351,6 +351,15 @@ const Chat = () => {
             FoodTalk
           </h1>
           <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/subscription")}
+              size="sm"
+              className="px-2 sm:px-3 text-amber-600 hover:bg-amber-50"
+            >
+              <Crown className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">PRO</span>
+            </Button>
             <Button
               variant="ghost"
               onClick={() => navigate("/profile")}

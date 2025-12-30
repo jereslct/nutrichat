@@ -188,6 +188,8 @@ export type Database = {
           is_premium: boolean
           role: string
           specialty: string | null
+          subscription_id: string | null
+          subscription_status: string
           updated_at: string | null
         }
         Insert: {
@@ -199,6 +201,8 @@ export type Database = {
           is_premium?: boolean
           role?: string
           specialty?: string | null
+          subscription_id?: string | null
+          subscription_status?: string
           updated_at?: string | null
         }
         Update: {
@@ -210,6 +214,8 @@ export type Database = {
           is_premium?: boolean
           role?: string
           specialty?: string | null
+          subscription_id?: string | null
+          subscription_status?: string
           updated_at?: string | null
         }
         Relationships: []
