@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Session } from "@supabase/supabase-js";
+import { PremiumModal } from "@/components/PremiumModal";
 
 interface Message {
   role: "user" | "assistant";
@@ -28,11 +29,39 @@ const Chat = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  // Check for payment status in URL
+  useEffect(() => {
+    const status = searchParams.get("status");
+    if (status === "success") {
+      toast({
+        title: "¡Pago exitoso!",
+        description: "Ya eres usuario PRO. ¡Disfruta de acceso ilimitado!",
+      });
+      // Clean URL
+      window.history.replaceState({}, "", "/chat");
+    } else if (status === "failure") {
+      toast({
+        title: "Pago fallido",
+        description: "No se pudo procesar tu pago. Intenta nuevamente.",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", "/chat");
+    } else if (status === "pending") {
+      toast({
+        title: "Pago pendiente",
+        description: "Tu pago está siendo procesado. Te notificaremos cuando se complete.",
+      });
+      window.history.replaceState({}, "", "/chat");
+    }
+  }, [searchParams, toast]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -261,9 +290,25 @@ const Chat = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a 403 LIMIT_REACHED error
+        if (error.message?.includes("403") || error.status === 403) {
+          // Remove the user message we just added
+          setMessages((prev) => prev.slice(0, -1));
+          setShowPremiumModal(true);
+          return;
+        }
+        throw error;
+      }
 
       if (data.error) {
+        // Check for LIMIT_REACHED error from response
+        if (data.error === "LIMIT_REACHED") {
+          // Remove the user message we just added
+          setMessages((prev) => prev.slice(0, -1));
+          setShowPremiumModal(true);
+          return;
+        }
         throw new Error(data.error);
       }
 
@@ -277,6 +322,12 @@ const Chat = () => {
         content: data.response,
       });
     } catch (error: any) {
+      // Also check for LIMIT_REACHED in generic error handler
+      if (error.message?.includes("LIMIT_REACHED") || error.status === 403) {
+        setMessages((prev) => prev.slice(0, -1));
+        setShowPremiumModal(true);
+        return;
+      }
       toast({
         title: "Error",
         description: error.message || "No se pudo enviar el mensaje",
@@ -517,6 +568,12 @@ const Chat = () => {
           </div>
         </div>
       </footer>
+
+      {/* Premium Modal */}
+      <PremiumModal 
+        open={showPremiumModal} 
+        onOpenChange={setShowPremiumModal} 
+      />
     </div>
   );
 };
