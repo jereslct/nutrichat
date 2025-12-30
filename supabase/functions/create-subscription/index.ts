@@ -12,19 +12,22 @@ serve(async (req) => {
   }
 
   try {
+    // 1. Extract and validate Authorization header
     const authHeader = req.headers.get("Authorization") ?? "";
     const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7) : "";
 
-    console.log("Auth header present:", !!authHeader, "token present:", !!token);
+    console.log("=== CREATE-SUBSCRIPTION START ===");
+    console.log("Auth header present:", !!authHeader, "| Token present:", !!token);
 
     if (!token) {
+      console.error("No token provided");
       return new Response(
-        JSON.stringify({ error: "Usuario no autenticado" }),
+        JSON.stringify({ error: "Usuario no autenticado", details: "No se proporcionó token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Authenticate user (avoid session storage in Edge runtime)
+    // 2. Create Supabase client and authenticate user
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -41,21 +44,36 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token.trim());
 
     if (authError || !user) {
-      console.error("Auth error:", authError);
+      console.error("Auth error:", authError?.message || "User not found");
       return new Response(
-        JSON.stringify({ error: "Usuario no autenticado" }),
+        JSON.stringify({ error: "Usuario no autenticado", details: authError?.message }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Creating subscription for user:", user.id);
+    // 3. Validate user has email
+    console.log("User authenticated:", user.id);
+    console.log("User email:", user.email);
 
-    const MERCADOPAGO_ACCESS_TOKEN = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
-    if (!MERCADOPAGO_ACCESS_TOKEN) {
-      throw new Error("MercadoPago access token not configured");
+    if (!user.email) {
+      console.error("User has no email");
+      return new Response(
+        JSON.stringify({ error: "El usuario no tiene email registrado", details: "Se requiere un email para crear la suscripción" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    // Debug: verify that the MercadoPago account/token matches Argentina (MLA)
+    // 4. Validate MercadoPago token
+    const MERCADOPAGO_ACCESS_TOKEN = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
+    if (!MERCADOPAGO_ACCESS_TOKEN) {
+      console.error("MERCADOPAGO_ACCESS_TOKEN not configured");
+      return new Response(
+        JSON.stringify({ error: "Error de configuración", details: "Token de MercadoPago no configurado" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 5. Debug: Check MercadoPago account info
     try {
       const meRes = await fetch("https://api.mercadopago.com/users/me", {
         headers: { Authorization: `Bearer ${MERCADOPAGO_ACCESS_TOKEN}` },
@@ -63,64 +81,81 @@ serve(async (req) => {
 
       if (meRes.ok) {
         const me = await meRes.json();
-        console.log("MercadoPago account context:", {
+        console.log("MercadoPago account:", {
           id: me?.id,
           site_id: me?.site_id,
           country_id: me?.country_id,
         });
       } else {
-        console.warn(
-          "MercadoPago /users/me failed:",
-          meRes.status,
-          await meRes.text(),
-        );
+        console.warn("MercadoPago /users/me failed:", meRes.status);
       }
     } catch (e) {
       console.warn("MercadoPago /users/me error:", e);
     }
 
-    // Get the origin from the request
+    // 6. Build subscription payload
     const origin = req.headers.get("origin") || "https://coghazfvffthyrjsifrm.lovableproject.com";
 
-    // Create MercadoPago preapproval (subscription)
-    // API Docs: https://www.mercadopago.com.ar/developers/en/reference/subscriptions/_preapproval/post
-    const subscriptionData = {
+    const subscriptionPayload = {
+      payer_email: user.email, // REQUIRED by MercadoPago
       reason: "FoodTalk PRO - Suscripción Mensual",
-      external_reference: user.id, // Store user_id for webhook identification
-      // IMPORTANT: Do NOT send payer_email if the user email is not registered in MercadoPago
-      // or if it's registered in a different country than the Access Token's site_id (MLA = Argentina).
-      // Instead, let the user enter their email during checkout or omit payer_email entirely.
-      // payer_email: user.email, // <- REMOVED to avoid "Cannot operate between different countries"
+      external_reference: user.id,
+      back_url: `${origin}/chat?subscription=success`,
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
-        transaction_amount: 2999, // Price in ARS
+        transaction_amount: 2999,
         currency_id: "ARS",
       },
-      back_url: `${origin}/chat?subscription=success`,
-      status: "pending", // Will be authorized when user completes checkout
+      status: "pending",
     };
 
-    console.log("Creating MercadoPago subscription...");
-    console.log("MercadoPago payload:", JSON.stringify(subscriptionData));
+    console.log("=== MERCADOPAGO PAYLOAD ===");
+    console.log(JSON.stringify(subscriptionPayload, null, 2));
 
+    // 7. Create MercadoPago subscription
+    console.log("Sending request to MercadoPago...");
     const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${MERCADOPAGO_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(subscriptionData),
+      body: JSON.stringify(subscriptionPayload),
     });
 
+    const mpResponseText = await mpResponse.text();
+    console.log("MercadoPago response status:", mpResponse.status);
+    console.log("MercadoPago response body:", mpResponseText);
+
     if (!mpResponse.ok) {
-      const errorText = await mpResponse.text();
-      console.error("MercadoPago error:", mpResponse.status, errorText);
-      throw new Error(`Error creating subscription: ${mpResponse.status} - ${errorText}`);
+      let errorData;
+      try {
+        errorData = JSON.parse(mpResponseText);
+      } catch {
+        errorData = { raw: mpResponseText };
+      }
+
+      console.error("=== MERCADOPAGO ERROR ===");
+      console.error("Status:", mpResponse.status);
+      console.error("Error data:", JSON.stringify(errorData, null, 2));
+
+      return new Response(
+        JSON.stringify({ 
+          error: `Error de MercadoPago: ${errorData?.message || mpResponse.status}`,
+          details: errorData,
+          status: mpResponse.status
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const subscription = await mpResponse.json();
-    console.log("Subscription created:", subscription.id, "Status:", subscription.status);
+    // 8. Parse successful response
+    const subscription = JSON.parse(mpResponseText);
+    console.log("=== SUBSCRIPTION CREATED ===");
+    console.log("ID:", subscription.id);
+    console.log("Status:", subscription.status);
+    console.log("Init point:", subscription.init_point);
 
     return new Response(
       JSON.stringify({
@@ -131,10 +166,18 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (error) {
-    console.error("Error creating subscription:", error);
+    console.error("=== UNEXPECTED ERROR ===");
+    console.error("Error:", error);
+    console.error("Message:", error instanceof Error ? error.message : "Unknown error");
+    console.error("Stack:", error instanceof Error ? error.stack : "No stack");
+
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Error creating subscription" }),
+      JSON.stringify({ 
+        error: error instanceof Error ? error.message : "Error inesperado al crear suscripción",
+        details: error instanceof Error ? error.stack : null
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
