@@ -74,7 +74,7 @@ const DoctorDashboard = () => {
 
   useEffect(() => {
     if (!roleLoading && !user) {
-      navigate("/auth");
+      navigate("/register");
     } else if (!roleLoading && role !== "doctor") {
       navigate("/upload");
     }
@@ -123,7 +123,7 @@ const DoctorDashboard = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    navigate("/register");
   };
 
   const getInitials = (name: string | null) => {

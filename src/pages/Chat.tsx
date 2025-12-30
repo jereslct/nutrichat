@@ -78,7 +78,7 @@ const Chat = () => {
           setInput("");
           setSelectedImage(null);
           setImageFile(null);
-          navigate("/auth");
+          navigate("/register");
         } else if (event === 'SIGNED_IN') {
           // Cargar datos solo cuando hay un nuevo login
           setTimeout(() => {
@@ -93,7 +93,7 @@ const Chat = () => {
       setSession(session);
       setIsInitialized(true);
       if (!session) {
-        navigate("/auth");
+        navigate("/register");
       } else {
         loadDietAndMessages(session.user.id);
       }
@@ -364,7 +364,7 @@ const Chat = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate("/auth");
+    navigate("/register");
   };
 
   return (
