@@ -2,10 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Upload as UploadIcon, FileText, LogOut, Loader2, MessageSquare, Trash2, UserCircle } from "lucide-react";
+import { Upload as UploadIcon, LogOut, Loader2, MessageSquare, Trash2, UserCircle } from "lucide-react";
 import { Session } from "@supabase/supabase-js";
 import {
   AlertDialog,
@@ -18,6 +17,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { PremiumModal } from "@/components/PremiumModal";
+
+const MAX_FILE_SIZE_MB = 6;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 const Upload = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -26,6 +29,7 @@ const Upload = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState("");
   const [existingDiet, setExistingDiet] = useState<any>(null);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -89,10 +93,10 @@ const Upload = () => {
         });
         return;
       }
-      if (selectedFile.size > 10 * 1024 * 1024) {
+      if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
         toast({
           title: "Archivo muy grande",
-          description: "El archivo no debe superar los 10MB",
+          description: `El archivo no debe superar los ${MAX_FILE_SIZE_MB}MB`,
           variant: "destructive",
         });
         return;
@@ -104,15 +108,23 @@ const Upload = () => {
   const handleUpload = async () => {
     if (!file || !session) return;
 
+    // Validación de tamaño antes de intentar subir
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast({
+        title: "Archivo muy grande",
+        description: `El archivo es demasiado grande (Máx ${MAX_FILE_SIZE_MB}MB)`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setUploading(true);
     setUploadProgress(0);
     setUploadStatus("Leyendo archivo...");
     
     try {
-      // Simular progreso de lectura
       setUploadProgress(20);
       
-      // Convertir FileReader a Promise
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
@@ -128,7 +140,6 @@ const Upload = () => {
       setUploadProgress(60);
       setUploadStatus("Procesando con IA...");
 
-      // Obtener el token de sesión actual
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       
       if (!currentSession?.access_token) {
@@ -142,9 +153,30 @@ const Upload = () => {
         },
       });
 
-      if (error) throw error;
+      // Manejar errores de la Edge Function
+      if (error) {
+        console.error("Error de invoke:", error);
+        
+        // Verificar si es error de límite (403)
+        const errorBody = error.message || "";
+        if (errorBody.includes("LIMIT_REACHED") || errorBody.includes("403")) {
+          setShowPremiumModal(true);
+          setUploadStatus("");
+          setUploadProgress(0);
+          return;
+        }
+        
+        throw error;
+      }
 
+      // Verificar errores en el cuerpo de respuesta
       if (data?.error) {
+        if (data.error === "LIMIT_REACHED") {
+          setShowPremiumModal(true);
+          setUploadStatus("");
+          setUploadProgress(0);
+          return;
+        }
         throw new Error(data.error);
       }
 
@@ -163,7 +195,6 @@ const Upload = () => {
 
       setFile(null);
       
-      // Reset progress after a delay
       setTimeout(() => {
         setUploadProgress(0);
         setUploadStatus("");
@@ -171,9 +202,15 @@ const Upload = () => {
     } catch (error: any) {
       console.error("Error uploading PDF:", error);
       setUploadStatus("Error en la carga");
+      
+      // Mostrar mensaje de error detallado del backend
+      const errorMessage = error?.context?.body 
+        ? JSON.parse(error.context.body)?.error 
+        : error.message || "No se pudo procesar el PDF";
+      
       toast({
-        title: "Error",
-        description: error.message || "No se pudo procesar el PDF",
+        title: "Error al procesar PDF",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -389,6 +426,11 @@ const Upload = () => {
           )}
         </div>
       </main>
+
+      <PremiumModal 
+        open={showPremiumModal} 
+        onOpenChange={setShowPremiumModal} 
+      />
     </div>
   );
 };

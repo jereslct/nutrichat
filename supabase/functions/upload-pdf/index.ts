@@ -187,8 +187,24 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error en upload-pdf:", error);
+    console.error("=== ERROR EN UPLOAD-PDF ===");
+    console.error("Tipo de error:", error instanceof Error ? error.constructor.name : typeof error);
+    console.error("Mensaje:", error instanceof Error ? error.message : String(error));
+    console.error("Stack:", error instanceof Error ? error.stack : "N/A");
+    
     const errorMessage = error instanceof Error ? error.message : "Error procesando PDF";
+    
+    // Detectar si es error de límite alcanzado
+    if (errorMessage.includes("LIMIT_REACHED") || errorMessage.includes("límite")) {
+      return new Response(
+        JSON.stringify({ error: "LIMIT_REACHED", message: "Has alcanzado el límite de chats gratuitos" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {
