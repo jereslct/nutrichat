@@ -6,6 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Parse external_reference format: userId|planTier|licenses
+function parseExternalReference(ref: string): { userId: string; planTier: string | null; licenses: number } {
+  const parts = ref.split("|");
+  return {
+    userId: parts[0],
+    planTier: parts[1] || null,
+    licenses: parseInt(parts[2] || "0", 10),
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -84,9 +94,12 @@ serve(async (req) => {
     const resource = await mpResponse.json();
     console.log("Resource status:", resource.status, "External reference:", resource.external_reference);
 
-    // Get user_id from external_reference
-    const userId = resource.external_reference;
+    // Parse external_reference to get userId and plan info
+    const externalRef = resource.external_reference || "";
+    const { userId, planTier, licenses } = parseExternalReference(externalRef);
     
+    console.log("Parsed external reference - userId:", userId, "planTier:", planTier, "licenses:", licenses);
+
     if (!userId) {
       console.error("No user_id found in resource");
       return new Response(JSON.stringify({ received: true, error: "No user_id in resource" }), {
@@ -104,11 +117,13 @@ serve(async (req) => {
     // Preapproval statuses: pending, authorized, paused, cancelled
     // Payment statuses: approved, pending, rejected, etc.
     let subscriptionStatus: string;
+    let shouldUpdateLicenses = false;
     
     if (topic === "payment" || topic === "subscription_authorized_payment") {
       // For payment notifications
       if (resource.status === "approved") {
         subscriptionStatus = "active";
+        shouldUpdateLicenses = true; // Renew licenses on payment approval
       } else {
         console.log("Payment not approved:", resource.status);
         return new Response(JSON.stringify({ received: true, status: resource.status }), {
@@ -120,6 +135,7 @@ serve(async (req) => {
       switch (resource.status) {
         case "authorized":
           subscriptionStatus = "active";
+          shouldUpdateLicenses = true;
           break;
         case "paused":
           subscriptionStatus = "paused";
@@ -137,8 +153,8 @@ serve(async (req) => {
 
     console.log("Updating user:", userId, "to subscription_status:", subscriptionStatus);
 
-    // Update user profile
-    const updateData: any = {
+    // Build update data
+    const updateData: Record<string, any> = {
       subscription_status: subscriptionStatus,
       updated_at: new Date().toISOString(),
     };
@@ -148,12 +164,29 @@ serve(async (req) => {
       updateData.subscription_id = resource.id;
     }
 
+    // Update plan tier if provided
+    if (planTier) {
+      updateData.plan_tier = planTier;
+    }
+
+    // Update licenses count if subscription is active/authorized and we have license info
+    if (shouldUpdateLicenses && licenses > 0) {
+      updateData.licenses_count = licenses;
+      console.log("Setting licenses_count to:", licenses);
+    }
+
     // If subscription is active, also set is_premium for backwards compatibility
     if (subscriptionStatus === "active") {
       updateData.is_premium = true;
     } else if (subscriptionStatus === "cancelled" || subscriptionStatus === "paused") {
       updateData.is_premium = false;
+      // Reset licenses on cancellation
+      if (subscriptionStatus === "cancelled") {
+        updateData.licenses_count = 0;
+      }
     }
+
+    console.log("Update data:", JSON.stringify(updateData));
 
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
@@ -166,13 +199,16 @@ serve(async (req) => {
     }
 
     console.log("Subscription status updated successfully for user:", userId);
+    console.log("Plan tier:", planTier, "Licenses:", licenses);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: "Subscription updated",
         user_id: userId,
-        status: subscriptionStatus
+        status: subscriptionStatus,
+        plan_tier: planTier,
+        licenses_count: shouldUpdateLicenses ? licenses : undefined,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

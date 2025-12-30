@@ -186,6 +186,8 @@ export type Database = {
           full_name: string | null
           id: string
           is_premium: boolean
+          licenses_count: number
+          plan_tier: string | null
           role: string
           specialty: string | null
           subscription_id: string | null
@@ -199,6 +201,8 @@ export type Database = {
           full_name?: string | null
           id: string
           is_premium?: boolean
+          licenses_count?: number
+          plan_tier?: string | null
           role?: string
           specialty?: string | null
           subscription_id?: string | null
@@ -212,6 +216,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_premium?: boolean
+          licenses_count?: number
+          plan_tier?: string | null
           role?: string
           specialty?: string | null
           subscription_id?: string | null

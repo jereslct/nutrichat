@@ -60,12 +60,43 @@ serve(async (req) => {
       );
     }
 
-    // Get doctor's name from profiles (only for display purposes)
-    const { data: userData } = await supabaseClient
+    // Get doctor's profile including licenses_count
+    const { data: userData } = await serviceClient
       .from('profiles')
-      .select('full_name')
+      .select('full_name, licenses_count, subscription_status, plan_tier')
       .eq('id', user.id)
       .single();
+
+    // Check if doctor has available licenses (only for premium plans with licenses)
+    const hasPremiumPlan = userData?.subscription_status === 'active' && 
+                           (userData?.plan_tier === 'doctor_basic' || userData?.plan_tier === 'doctor_pro');
+    
+    if (hasPremiumPlan) {
+      const licensesCount = userData?.licenses_count || 0;
+      
+      // Count current active patients
+      const { count: activePatients } = await serviceClient
+        .from('doctor_patients')
+        .select('*', { count: 'exact', head: true })
+        .eq('doctor_id', user.id)
+        .not('patient_id', 'is', null);
+
+      const usedLicenses = activePatients || 0;
+      
+      if (usedLicenses >= licensesCount) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Sin licencias disponibles',
+            details: `Has utilizado todas tus ${licensesCount} licencias. Actualiza tu plan para agregar más pacientes.`,
+            licenses_used: usedLicenses,
+            licenses_total: licensesCount,
+          }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log(`Doctor ${user.id} has ${licensesCount - usedLicenses} licenses available (${usedLicenses}/${licensesCount} used)`);
+    }
 
     // Generar código único
     let invitationCode = generateInvitationCode();

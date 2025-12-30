@@ -6,6 +6,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Plan configurations
+const PLAN_CONFIGS: Record<string, { price: number; title: string; licenses: number }> = {
+  individual: {
+    price: 16999,
+    title: "NutriChat PRO - Suscripción Personal",
+    licenses: 0,
+  },
+  doctor_basic: {
+    price: 27999,
+    title: "NutriChat Médico - 10 Licencias",
+    licenses: 10,
+  },
+  doctor_pro: {
+    price: 43999,
+    title: "NutriChat Médico Plus - 25 Licencias",
+    licenses: 25,
+  },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -27,7 +46,27 @@ serve(async (req) => {
       );
     }
 
-    // 2. Create Supabase client and authenticate user
+    // 2. Parse request body to get plan_tier
+    let planTier = "individual"; // Default plan
+    try {
+      const body = await req.json();
+      if (body.plan_tier && PLAN_CONFIGS[body.plan_tier]) {
+        planTier = body.plan_tier;
+      }
+      console.log("Plan tier requested:", planTier);
+    } catch {
+      console.log("No body or invalid JSON, using default plan: individual");
+    }
+
+    const planConfig = PLAN_CONFIGS[planTier];
+    if (!planConfig) {
+      return new Response(
+        JSON.stringify({ error: "Plan inválido", details: `Plan '${planTier}' no existe` }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 3. Create Supabase client and authenticate user
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -51,7 +90,7 @@ serve(async (req) => {
       );
     }
 
-    // 3. Validate user has email
+    // 4. Validate user has email
     console.log("User authenticated:", user.id);
     console.log("User email:", user.email);
 
@@ -63,7 +102,7 @@ serve(async (req) => {
       );
     }
 
-    // 4. Validate MercadoPago token
+    // 5. Validate MercadoPago token
     const MERCADOPAGO_ACCESS_TOKEN = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
     if (!MERCADOPAGO_ACCESS_TOKEN) {
       console.error("MERCADOPAGO_ACCESS_TOKEN not configured");
@@ -73,7 +112,7 @@ serve(async (req) => {
       );
     }
 
-    // 5. Debug: Check MercadoPago account info
+    // 6. Debug: Check MercadoPago account info
     try {
       const meRes = await fetch("https://api.mercadopago.com/users/me", {
         headers: { Authorization: `Bearer ${MERCADOPAGO_ACCESS_TOKEN}` },
@@ -93,27 +132,34 @@ serve(async (req) => {
       console.warn("MercadoPago /users/me error:", e);
     }
 
-    // 6. Build subscription payload
+    // 7. Build subscription payload with plan metadata
     const origin = req.headers.get("origin") || "https://coghazfvffthyrjsifrm.lovableproject.com";
 
+    // Use external_reference to encode both user_id and plan info
+    // Format: userId|planTier|licenses
+    const externalReference = `${user.id}|${planTier}|${planConfig.licenses}`;
+
     const subscriptionPayload = {
-      payer_email: user.email, // REQUIRED by MercadoPago
-      reason: "NutriChat PRO - Suscripción Mensual",
-      external_reference: user.id,
+      payer_email: user.email,
+      reason: planConfig.title,
+      external_reference: externalReference,
       back_url: `${origin}/chat?subscription=success`,
       auto_recurring: {
         frequency: 1,
         frequency_type: "months",
-        transaction_amount: 16999,
+        transaction_amount: planConfig.price,
         currency_id: "ARS",
       },
       status: "pending",
     };
 
     console.log("=== MERCADOPAGO PAYLOAD ===");
+    console.log("Plan:", planTier);
+    console.log("Price:", planConfig.price);
+    console.log("Licenses:", planConfig.licenses);
     console.log(JSON.stringify(subscriptionPayload, null, 2));
 
-    // 7. Create MercadoPago subscription
+    // 8. Create MercadoPago subscription
     console.log("Sending request to MercadoPago...");
     const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
@@ -150,12 +196,13 @@ serve(async (req) => {
       );
     }
 
-    // 8. Parse successful response
+    // 9. Parse successful response
     const subscription = JSON.parse(mpResponseText);
     console.log("=== SUBSCRIPTION CREATED ===");
     console.log("ID:", subscription.id);
     console.log("Status:", subscription.status);
     console.log("Init point:", subscription.init_point);
+    console.log("Plan tier:", planTier);
 
     return new Response(
       JSON.stringify({
@@ -163,6 +210,7 @@ serve(async (req) => {
         subscription_id: subscription.id,
         init_point: subscription.init_point,
         status: subscription.status,
+        plan_tier: planTier,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
