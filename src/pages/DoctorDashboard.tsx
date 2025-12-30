@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import {
   Pagination,
   PaginationContent,
@@ -32,6 +33,7 @@ import {
   User,
   Loader2,
   CreditCard,
+  UserCheck,
 } from "lucide-react";
 import { LinkRequestsNotification } from "@/components/LinkRequestsNotification";
 import { AllPatientsDialog } from "@/components/AllPatientsDialog";
@@ -249,7 +251,7 @@ const DoctorDashboard = () => {
           <AllPatientsDialog onUpdate={fetchPatients} />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <PatientsListDialog patients={patients}>
             <Card className="bg-white border-neutral-200 cursor-pointer hover:border-primary hover:shadow-md transition-all interactive">
               <CardContent className="p-6 flex items-center gap-4">
@@ -263,6 +265,38 @@ const DoctorDashboard = () => {
               </CardContent>
             </Card>
           </PatientsListDialog>
+          
+          {/* Licenses usage indicator */}
+          <Card 
+            className="bg-white border-neutral-200 cursor-pointer hover:border-primary hover:shadow-md transition-all interactive"
+            onClick={() => navigate("/subscription")}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4 mb-3">
+                <div className="p-3 bg-emerald-100 rounded-xl">
+                  <UserCheck className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xl font-bold text-neutral-900">
+                    {patients.length}/{profile?.licenses_count || 0}
+                  </p>
+                  <p className="text-sm text-neutral-600">Licencias usadas</p>
+                </div>
+              </div>
+              <Progress 
+                value={profile?.licenses_count ? (patients.length / profile.licenses_count) * 100 : 0} 
+                className="h-2"
+              />
+              {profile?.plan_tier && (
+                <p className="text-xs text-neutral-500 mt-2">
+                  {profile.plan_tier === 'doctor_basic' ? 'Plan Médico Básico' : 
+                   profile.plan_tier === 'doctor_pro' ? 'Plan Médico Plus' : 
+                   profile.plan_tier === 'individual' ? 'Plan Personal' : 'Sin plan'}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="bg-white border-neutral-200">
             <CardContent className="p-6 flex items-center gap-4">
               <div className="p-3 bg-accent/10 rounded-xl">

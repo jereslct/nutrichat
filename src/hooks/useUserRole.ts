@@ -11,6 +11,8 @@ interface UserRoleState {
   profile: {
     full_name: string | null;
     avatar_url: string | null;
+    licenses_count: number;
+    plan_tier: string | null;
   } | null;
 }
 
@@ -42,7 +44,7 @@ export const useUserRole = () => {
         // Get profile data
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("full_name, avatar_url")
+          .select("full_name, avatar_url, licenses_count, plan_tier")
           .eq("id", session.user.id)
           .single();
 
@@ -75,7 +77,7 @@ export const useUserRole = () => {
 
             const { data: profileData } = await supabase
               .from("profiles")
-              .select("full_name, avatar_url")
+              .select("full_name, avatar_url, licenses_count, plan_tier")
               .eq("id", session.user.id)
               .single();
 
