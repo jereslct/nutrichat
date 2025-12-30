@@ -19,15 +19,37 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      console.error("No Authorization header provided");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.error("No valid Authorization header provided");
       return new Response(
-        JSON.stringify({ error: "No se proporcionó token de autenticación" }),
+        JSON.stringify({ error: "No se proporcionó token de autenticación válido" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Properly authenticate user with Supabase auth (verifies JWT signature)
+    const token = authHeader.replace("Bearer ", "");
+    console.log("Token received, length:", token.length);
+
+    // Create admin client to verify user
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Verify the JWT and get user info
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error("Auth error:", authError?.message || "No user found");
+      return new Response(
+        JSON.stringify({ error: "Token inválido o expirado. Por favor, inicia sesión nuevamente." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = user.id;
+
+    // Create user-scoped client for database operations
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
@@ -37,18 +59,6 @@ serve(async (req) => {
         },
       }
     );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-
-    if (authError || !user) {
-      console.error("Auth error:", authError);
-      return new Response(
-        JSON.stringify({ error: "Usuario no autenticado" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const userId = user.id;
     console.log("Usuario autenticado:", userId);
 
     const { pdf, fileName } = await req.json();
