@@ -43,10 +43,10 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // ========== CHECK PREMIUM STATUS ==========
+    // ========== CHECK SUBSCRIPTION STATUS ==========
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("is_premium, chat_count")
+      .select("subscription_status, chat_count, is_premium")
       .eq("id", userId)
       .single();
 
@@ -55,13 +55,18 @@ serve(async (req) => {
       throw new Error("Error al verificar el perfil del usuario");
     }
 
+    // Check if user has active subscription or is premium (backwards compatibility)
+    const hasActiveSubscription = profile.subscription_status === 'active' || profile.is_premium === true;
+
     // Check if user has reached free chat limit
-    if (!profile.is_premium && profile.chat_count >= FREE_CHAT_LIMIT) {
+    if (!hasActiveSubscription && profile.chat_count >= FREE_CHAT_LIMIT) {
       console.log(`Usuario ${userId} ha alcanzado el límite gratuito: ${profile.chat_count}/${FREE_CHAT_LIMIT}`);
       return new Response(
         JSON.stringify({ 
           error: "LIMIT_REACHED",
-          message: "Has alcanzado tus 5 chats gratuitos. Pasa a PRO para continuar."
+          message: "Has alcanzado tus 5 chats gratuitos. Suscríbete para continuar.",
+          chat_count: profile.chat_count,
+          limit: FREE_CHAT_LIMIT
         }),
         {
           status: 403,
@@ -277,7 +282,8 @@ Instrucciones:
     }
 
     // ========== INCREMENT CHAT COUNT (for freemium tracking) ==========
-    if (!profile.is_premium) {
+    // ========== INCREMENT CHAT COUNT (only for non-subscribers) ==========
+    if (!hasActiveSubscription) {
       const { error: chatCountError } = await supabaseAdmin
         .from("profiles")
         .update({ chat_count: profile.chat_count + 1 })
