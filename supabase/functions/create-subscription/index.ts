@@ -38,7 +38,7 @@ serve(async (req) => {
       }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token.trim());
 
     if (authError || !user) {
       console.error("Auth error:", authError);
