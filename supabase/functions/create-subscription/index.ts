@@ -12,24 +12,28 @@ serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    console.log("Auth header present:", !!authHeader);
-    
-    if (!authHeader) {
-      console.error("No authorization header");
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7) : "";
+
+    console.log("Auth header present:", !!authHeader, "token present:", !!token);
+
+    if (!token) {
       return new Response(
         JSON.stringify({ error: "Usuario no autenticado" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Authenticate user using the token directly
+    // Authenticate user (avoid session storage in Edge runtime)
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: { Authorization: authHeader },
+          headers: { Authorization: `Bearer ${token.trim()}` },
+        },
+        auth: {
+          persistSession: false,
         },
       }
     );
