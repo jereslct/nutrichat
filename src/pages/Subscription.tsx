@@ -77,6 +77,7 @@ const Subscription = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState<string | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>("free");
+  const [isPremium, setIsPremium] = useState<boolean>(false);
   const [chatCount, setChatCount] = useState<number>(0);
   const [userRole, setUserRole] = useState<string>("patient");
   const [planTier, setPlanTier] = useState<string | null>(null);
@@ -112,12 +113,13 @@ const Subscription = () => {
   const loadProfile = async (userId: string) => {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("subscription_status, chat_count, role, plan_tier, licenses_count")
+      .select("subscription_status, chat_count, role, plan_tier, licenses_count, is_premium")
       .eq("id", userId)
       .single();
 
     if (profile) {
       setSubscriptionStatus(profile.subscription_status || "free");
+      setIsPremium(profile.is_premium ?? false);
       setChatCount(profile.chat_count || 0);
       setUserRole(profile.role || "patient");
       setPlanTier(profile.plan_tier);
@@ -171,7 +173,7 @@ const Subscription = () => {
     }
   };
 
-  const isSubscribed = subscriptionStatus === "active";
+  const isSubscribed = subscriptionStatus === "active" || isPremium === true;
   const tabFromUrl = searchParams.get("tab");
   const defaultTab = tabFromUrl || (userRole === "doctor" ? "profesionales" : "pacientes");
 
