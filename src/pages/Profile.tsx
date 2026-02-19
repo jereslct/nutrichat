@@ -15,6 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, FileText, Calendar, User, Camera, Loader2, Save, X, Pencil, Stethoscope } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
+import { Badge } from "@/components/ui/badge";
 import { DoctorSelector } from "@/components/DoctorSelector";
 import { LinkRequestsNotification } from "@/components/LinkRequestsNotification";
 import { Session } from "@supabase/supabase-js";
@@ -55,7 +56,7 @@ const Profile = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [diet, setDiet] = useState<Diet | null>(null);
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const { role } = useUserRole();
+  const { role, profile: userRoleProfile } = useUserRole();
   const [isEditing, setIsEditing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -415,6 +416,12 @@ const Profile = () => {
                     <p className="text-sm sm:text-base text-muted-foreground">
                       {session?.user?.email}
                     </p>
+                    <Badge 
+                      variant={userRoleProfile?.plan_tier ? "default" : "secondary"}
+                      className="mt-2"
+                    >
+                      {userRoleProfile?.plan_tier ? "⭐ Premium" : "Plan Gratuito"}
+                    </Badge>
                     {role === "doctor" && profile?.specialty && (
                       <p className="text-sm text-accent mt-1">{profile.specialty}</p>
                     )}
