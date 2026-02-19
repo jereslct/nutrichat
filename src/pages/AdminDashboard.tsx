@@ -164,22 +164,29 @@ const AdminDashboard = () => {
 
   const handleToggleUser = async (userId: string, currentStatus: boolean) => {
     try {
+      const newPremium = !currentStatus;
       const { error } = await supabase
         .from("profiles")
-        .update({ is_premium: !currentStatus })
+        .update({ 
+          is_premium: newPremium,
+          subscription_status: newPremium ? "authorized" : "free",
+          plan_tier: newPremium ? "patient_premium" : null,
+        })
         .eq("id", userId);
 
       if (error) throw error;
 
       setUsers((prev) =>
         prev.map((u) =>
-          u.id === userId ? { ...u, is_premium: !currentStatus } : u
+          u.id === userId 
+            ? { ...u, is_premium: newPremium, subscription_status: newPremium ? "authorized" : "free" } 
+            : u
         )
       );
 
       toast({
         title: "Usuario actualizado",
-        description: `Estado premium ${!currentStatus ? "activado" : "desactivado"}.`,
+        description: `Estado premium ${newPremium ? "activado" : "desactivado"}.`,
       });
     } catch (error) {
       toast({
