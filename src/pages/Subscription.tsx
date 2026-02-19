@@ -309,20 +309,29 @@ const Subscription = () => {
           </p>
         </div>
 
-        {/* Current Status for Free Users */}
-        {!isSubscribed && userRole === "patient" && (
+        {/* Current Status */}
+        {userRole === "patient" && (
           <div className="bg-white rounded-2xl border border-neutral-200 p-6 mb-8 text-center max-w-md mx-auto">
             <p className="text-neutral-600 mb-2">Tu uso actual</p>
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-3xl font-bold text-neutral-900">{chatCount}</span>
-              <span className="text-xl text-neutral-500">/ 5 chats gratuitos</span>
-            </div>
-            <div className="w-full bg-neutral-200 rounded-full h-2 mt-4">
-              <div 
-                className="bg-amber-500 h-2 rounded-full transition-all" 
-                style={{ width: `${Math.min((chatCount / 5) * 100, 100)}%` }}
-              />
-            </div>
+            {isSubscribed ? (
+              <div className="flex items-center justify-center gap-2">
+                <Crown className="h-6 w-6 text-amber-500" />
+                <span className="text-2xl font-bold text-neutral-900">Chats ilimitados</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-3xl font-bold text-neutral-900">{chatCount}</span>
+                  <span className="text-xl text-neutral-500">/ 5 chats gratuitos</span>
+                </div>
+                <div className="w-full bg-neutral-200 rounded-full h-2 mt-4">
+                  <div 
+                    className="bg-amber-500 h-2 rounded-full transition-all" 
+                    style={{ width: `${Math.min((chatCount / 5) * 100, 100)}%` }}
+                  />
+                </div>
+              </>
+            )}
           </div>
         )}
 
