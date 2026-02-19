@@ -1,0 +1,43 @@
+project_id = "coghazfvffthyrjsifrm"
+
+[functions.upload-pdf]
+verify_jwt = true
+
+[functions.chat]
+verify_jwt = true
+
+[functions.get-doctor-patients]
+verify_jwt = true
+
+[functions.generate-patient-summary]
+verify_jwt = true
+
+[functions.create-patient-invitation]
+verify_jwt = true
+
+[functions.get-all-patients]
+verify_jwt = true
+
+[functions.get-all-doctors]
+verify_jwt = true
+
+[functions.handle-link-request]
+verify_jwt = true
+
+[functions.get-pending-requests]
+verify_jwt = true
+
+[functions.analyze-food-image]
+verify_jwt = true
+
+[functions.create-preference]
+verify_jwt = true
+
+[functions.payment-webhook]
+verify_jwt = false
+
+[functions.create-subscription]
+verify_jwt = true
+
+[functions.mp-webhook]
+verify_jwt = false
