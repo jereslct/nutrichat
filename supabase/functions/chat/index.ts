@@ -98,36 +98,16 @@ serve(async (req) => {
     }
 
     // ========== RATE LIMITING LOGIC (daily limit for all users) ==========
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    
-    // Get current usage for user
-    const { data: usageData, error: usageError } = await supabaseAdmin
-      .from("user_usage")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    const { data: dailyCount, error: dailyCountError } = await supabaseAdmin
+      .rpc("get_daily_query_count", { p_user_id: userId });
 
-    if (usageError && usageError.code !== "PGRST116") {
-      // PGRST116 = no rows returned, which is fine for new users
-      console.error("Error fetching usage:", usageError);
+    if (dailyCountError) {
+      console.error("Error fetching daily count:", dailyCountError);
       throw new Error("Error al verificar límites de uso");
     }
 
-    let currentCount = 0;
-    let lastDate = today;
+    const currentCount = dailyCount ?? 0;
 
-    if (usageData) {
-      lastDate = usageData.last_query_date;
-      currentCount = usageData.daily_query_count;
-
-      // Reset counter if it's a new day
-      if (lastDate !== today) {
-        currentCount = 0;
-        lastDate = today;
-      }
-    }
-
-    // Check if user has reached the daily limit
     if (currentCount >= DAILY_QUERY_LIMIT) {
       console.log(`Usuario ${userId} ha alcanzado el límite diario: ${currentCount}/${DAILY_QUERY_LIMIT}`);
       return new Response(
@@ -281,59 +261,36 @@ ${diet.pdf_text}`;
 
     console.log("Respuesta de IA obtenida, longitud:", assistantResponse.length);
 
-    // ========== UPDATE USAGE COUNTER (after successful response) ==========
-    if (usageData) {
-      // Update existing record
-      const { error: updateError } = await supabaseAdmin
-        .from("user_usage")
-        .update({
-          daily_query_count: currentCount + 1,
-          last_query_date: today
-        })
-        .eq("user_id", userId);
+    // ========== ATOMIC INCREMENT: daily_query_count ==========
+    const { data: newDailyCount, error: incrementDailyError } = await supabaseAdmin
+      .rpc("increment_daily_query_count", { p_user_id: userId });
 
-      if (updateError) {
-        console.error("Error updating usage:", updateError);
-      }
-    } else {
-      // Insert new record
-      const { error: insertError } = await supabaseAdmin
-        .from("user_usage")
-        .insert({
-          user_id: userId,
-          daily_query_count: 1,
-          last_query_date: today
-        });
-
-      if (insertError) {
-        console.error("Error inserting usage:", insertError);
-      }
+    if (incrementDailyError) {
+      console.error("Error incrementing daily query count:", incrementDailyError);
     }
 
-    // ========== INCREMENT CHAT COUNT (for freemium tracking) ==========
-    // ========== INCREMENT CHAT COUNT (only for non-subscribers) ==========
+    // ========== ATOMIC INCREMENT: chat_count (only for non-subscribers) ==========
     if (!hasActiveSubscription) {
-      const { error: chatCountError } = await supabaseAdmin
-        .from("profiles")
-        .update({ chat_count: profile.chat_count + 1 })
-        .eq("id", userId);
+      const { data: newChatCount, error: incrementChatError } = await supabaseAdmin
+        .rpc("increment_chat_count", { p_user_id: userId });
 
-      if (chatCountError) {
-        console.error("Error updating chat count:", chatCountError);
+      if (incrementChatError) {
+        console.error("Error incrementing chat count:", incrementChatError);
       } else {
-        console.log(`Usuario ${userId} - Chat count: ${profile.chat_count + 1}/${FREE_CHAT_LIMIT}`);
+        console.log(`Usuario ${userId} - Chat count: ${newChatCount}/${FREE_CHAT_LIMIT}`);
       }
     }
 
-    console.log(`Usuario ${userId} - Consulta ${currentCount + 1}/${DAILY_QUERY_LIMIT}`);
+    console.log(`Usuario ${userId} - Consulta ${newDailyCount ?? (currentCount + 1)}/${DAILY_QUERY_LIMIT}`);
 
+    const queriesUsed = newDailyCount ?? (currentCount + 1);
     return new Response(
       JSON.stringify({ 
         success: true, 
         response: assistantResponse,
         usage: {
-          queriesUsed: currentCount + 1,
-          queriesRemaining: DAILY_QUERY_LIMIT - (currentCount + 1),
+          queriesUsed,
+          queriesRemaining: DAILY_QUERY_LIMIT - queriesUsed,
           limit: DAILY_QUERY_LIMIT
         }
       }),
