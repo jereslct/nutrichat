@@ -55,11 +55,10 @@ describe("NavLink", () => {
     renderNavLink({
       to: "/profile",
       "aria-label": "Ir al perfil",
-      "data-testid": "profile-link",
       children: "Perfil",
-    });
+    } as any);
 
-    const link = screen.getByTestId("profile-link");
+    const link = screen.getByText("Perfil");
     expect(link).toHaveAttribute("aria-label", "Ir al perfil");
   });
 });
