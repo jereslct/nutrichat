@@ -283,6 +283,8 @@ export type Database = {
     }
     Functions: {
       generate_invitation_code: { Args: never; Returns: string }
+      get_daily_image_count: { Args: { p_user_id: string }; Returns: number }
+      get_daily_query_count: { Args: { p_user_id: string }; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -293,6 +295,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_chat_count: { Args: { p_user_id: string }; Returns: number }
+      increment_daily_image_count: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
+      increment_daily_query_count: {
+        Args: { p_user_id: string }
+        Returns: number
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
