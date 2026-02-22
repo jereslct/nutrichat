@@ -42,33 +42,15 @@ serve(async (req) => {
     );
 
     // ========== RATE LIMITING FOR IMAGES ==========
-    const today = new Date().toISOString().split('T')[0];
-    
-    const { data: usageData, error: usageError } = await supabaseAdmin
-      .from("user_usage")
-      .select("*")
-      .eq("user_id", userId)
-      .single();
+    const { data: currentImageCount, error: imageCountError } = await supabaseAdmin
+      .rpc("get_daily_image_count", { p_user_id: userId });
 
-    if (usageError && usageError.code !== "PGRST116") {
-      console.error("Error fetching usage:", usageError);
+    if (imageCountError) {
+      console.error("Error fetching image count:", imageCountError);
       throw new Error("Error al verificar límites de uso");
     }
 
-    let currentImageCount = 0;
-    let lastDate = today;
-
-    if (usageData) {
-      lastDate = usageData.last_query_date;
-      currentImageCount = usageData.daily_image_count || 0;
-
-      if (lastDate !== today) {
-        currentImageCount = 0;
-        lastDate = today;
-      }
-    }
-
-    if (currentImageCount >= DAILY_IMAGE_LIMIT) {
+    if ((currentImageCount ?? 0) >= DAILY_IMAGE_LIMIT) {
       console.log(`Usuario ${userId} ha alcanzado el límite diario de imágenes: ${currentImageCount}/${DAILY_IMAGE_LIMIT}`);
       return new Response(
         JSON.stringify({ 
@@ -200,43 +182,24 @@ INSTRUCCIONES IMPORTANTES:
 
     console.log("Análisis de imagen completado, longitud:", assistantResponse.length);
 
-    // ========== UPDATE IMAGE USAGE COUNTER ==========
-    if (usageData) {
-      const { error: updateError } = await supabaseAdmin
-        .from("user_usage")
-        .update({
-          daily_image_count: currentImageCount + 1,
-          last_query_date: today
-        })
-        .eq("user_id", userId);
+    // ========== ATOMIC INCREMENT: daily_image_count ==========
+    const { data: newImageCount, error: incrementImageError } = await supabaseAdmin
+      .rpc("increment_daily_image_count", { p_user_id: userId });
 
-      if (updateError) {
-        console.error("Error updating image usage:", updateError);
-      }
-    } else {
-      const { error: insertError } = await supabaseAdmin
-        .from("user_usage")
-        .insert({
-          user_id: userId,
-          daily_query_count: 0,
-          daily_image_count: 1,
-          last_query_date: today
-        });
-
-      if (insertError) {
-        console.error("Error inserting usage:", insertError);
-      }
+    if (incrementImageError) {
+      console.error("Error incrementing image count:", incrementImageError);
     }
 
-    console.log(`Usuario ${userId} - Imagen ${currentImageCount + 1}/${DAILY_IMAGE_LIMIT}`);
+    console.log(`Usuario ${userId} - Imagen ${newImageCount ?? ((currentImageCount ?? 0) + 1)}/${DAILY_IMAGE_LIMIT}`);
 
+    const imagesUsed = newImageCount ?? ((currentImageCount ?? 0) + 1);
     return new Response(
       JSON.stringify({ 
         success: true, 
         response: assistantResponse,
         usage: {
-          imagesUsed: currentImageCount + 1,
-          imagesRemaining: DAILY_IMAGE_LIMIT - (currentImageCount + 1),
+          imagesUsed,
+          imagesRemaining: DAILY_IMAGE_LIMIT - imagesUsed,
           limit: DAILY_IMAGE_LIMIT
         }
       }),
