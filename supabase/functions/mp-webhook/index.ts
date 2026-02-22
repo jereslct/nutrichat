@@ -6,7 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Parse external_reference format: userId|planTier|licenses
 function parseExternalReference(ref: string): { userId: string; planTier: string | null; licenses: number } {
   const parts = ref.split("|");
   return {
@@ -16,6 +15,78 @@ function parseExternalReference(ref: string): { userId: string; planTier: string
   };
 }
 
+async function verifyWebhookSignature(
+  req: Request,
+  dataId: string | null
+): Promise<boolean> {
+  const secret = Deno.env.get("MERCADOPAGO_WEBHOOK_SECRET");
+  if (!secret) {
+    console.warn("MERCADOPAGO_WEBHOOK_SECRET not configured — skipping signature verification");
+    return true;
+  }
+
+  const xSignature = req.headers.get("x-signature");
+  const xRequestId = req.headers.get("x-request-id");
+
+  if (!xSignature) {
+    console.error("Missing x-signature header");
+    return false;
+  }
+
+  let ts: string | null = null;
+  let hash: string | null = null;
+
+  for (const part of xSignature.split(",")) {
+    const [key, ...rest] = part.split("=");
+    const value = rest.join("=");
+    if (!key || !value) continue;
+    const k = key.trim();
+    const v = value.trim();
+    if (k === "ts") ts = v;
+    else if (k === "v1") hash = v;
+  }
+
+  if (!hash) {
+    console.error("Missing v1 hash in x-signature header");
+    return false;
+  }
+
+  // Build manifest — omit sections whose value is absent (per MP docs)
+  let manifest = "";
+  if (dataId) manifest += `id:${dataId};`;
+  if (xRequestId) manifest += `request-id:${xRequestId};`;
+  if (ts) manifest += `ts:${ts};`;
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(manifest));
+  const computed = Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  if (computed !== hash) {
+    console.error("Webhook signature mismatch");
+    return false;
+  }
+
+  // Warn (but don't reject) if the timestamp is older than 5 minutes
+  if (ts) {
+    const tsMs = ts.length <= 12 ? parseInt(ts, 10) * 1000 : parseInt(ts, 10);
+    const drift = Math.abs(Date.now() - tsMs);
+    if (drift > 5 * 60 * 1000) {
+      console.warn("Webhook timestamp drift:", drift, "ms");
+    }
+  }
+
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,10 +94,23 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    
+
+    // data.id from query params is used both for routing and signature verification
+    const dataIdFromQuery = url.searchParams.get("data.id");
+
+    // Verify HMAC signature before processing
+    const signatureValid = await verifyWebhookSignature(req, dataIdFromQuery);
+    if (!signatureValid) {
+      console.error("Webhook signature verification failed — rejecting request");
+      return new Response(JSON.stringify({ error: "Invalid signature" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // MercadoPago sends topic and id as query params or in body
     let topic = url.searchParams.get("topic") || url.searchParams.get("type");
-    let resourceId = url.searchParams.get("id") || url.searchParams.get("data.id");
+    let resourceId = url.searchParams.get("id") || dataIdFromQuery;
 
     // Also try to get from body
     let body: any = {};
