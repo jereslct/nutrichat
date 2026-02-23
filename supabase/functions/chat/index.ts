@@ -155,6 +155,29 @@ serve(async (req) => {
 
     console.log("Procesando mensaje para dieta:", dietId, "longitud:", sanitizedMessage.length);
 
+    // ========== PRE-CLASSIFIER: reject off-topic questions cheaply ==========
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("API key de Lovable AI no configurada");
+    }
+
+    const isNutritionRelated = await classifyMessage(sanitizedMessage, LOVABLE_API_KEY);
+    if (!isNutritionRelated) {
+      console.log(`Mensaje rechazado por pre-clasificador para usuario ${userId}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          response: "No puedo ayudarte con eso. Soy un asistente especializado en nutrición. Por favor, formulá una pregunta relacionada con nutrición basada en tu plan nutricional cargado. 🥗",
+          usage: {
+            queriesUsed: currentCount,
+            queriesRemaining: DAILY_QUERY_LIMIT - currentCount,
+            limit: DAILY_QUERY_LIMIT,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ========== MAIN CHAT LOGIC ==========
     
     // Obtener la dieta del usuario
@@ -220,12 +243,6 @@ ${diet.pdf_text}`;
         role: "user",
         parts: [{ text: sanitizedMessage }]
       });
-    }
-
-    // Obtener la API key de Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("API key de Lovable AI no configurada");
     }
 
     console.log("Llamando a Lovable AI...");
@@ -326,6 +343,58 @@ ${diet.pdf_text}`;
     );
   }
 });
+
+/**
+ * Lightweight AI call that returns true if the message is nutrition-related.
+ * Uses very few tokens (~20) so the cost is negligible.
+ * On any error the function returns true (fail-open) so the main model
+ * can still apply its own guardrails.
+ */
+async function classifyMessage(message: string, apiKey: string): Promise<boolean> {
+  try {
+    const response = await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Eres un clasificador binario. Tu ÚNICA tarea es determinar si el mensaje del usuario " +
+                "está relacionado con nutrición, alimentación, dietas, comida, ingredientes, " +
+                "recetas, calorías, macronutrientes, suplementos alimenticios, hábitos alimentarios, " +
+                "hidratación o salud alimentaria. Respondé ÚNICAMENTE con la palabra SI o NO. " +
+                "No agregues explicaciones, puntuación ni ningún otro texto.",
+            },
+            { role: "user", content: message },
+          ],
+          temperature: 0.0,
+          max_tokens: 3,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Pre-classifier HTTP error:", response.status);
+      return true;
+    }
+
+    const data = await response.json();
+    const answer = (data.choices?.[0]?.message?.content ?? "").trim().toUpperCase();
+    console.log("Pre-classifier answer:", answer);
+
+    return answer.startsWith("SI") || answer.startsWith("SÍ") || answer === "YES";
+  } catch (err) {
+    console.error("Pre-classifier error, allowing message through:", err);
+    return true;
+  }
+}
 
 /**
  * Sanitizes user input to prevent prompt injection and limit token usage
