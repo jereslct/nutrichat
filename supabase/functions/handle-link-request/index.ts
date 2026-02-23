@@ -128,6 +128,30 @@ serve(async (req) => {
         const doctorId = request.requester_role === 'doctor' ? request.requester_id : user.id;
         const patientId = request.requester_role === 'patient' ? request.requester_id : user.id;
 
+        // Check doctor's license availability
+        const { data: doctorProfile } = await serviceClient
+          .from('profiles')
+          .select('subscription_status, plan_tier, licenses_count')
+          .eq('id', doctorId)
+          .single();
+
+        let premiumGranted = false;
+        let licensesAvailable = 0;
+
+        if (doctorProfile &&
+            doctorProfile.subscription_status === 'active' &&
+            (doctorProfile.plan_tier === 'doctor_basic' || doctorProfile.plan_tier === 'doctor_pro') &&
+            doctorProfile.licenses_count > 0) {
+          const { count: currentPatients } = await serviceClient
+            .from('doctor_patients')
+            .select('*', { count: 'exact', head: true })
+            .eq('doctor_id', doctorId)
+            .not('patient_id', 'is', null);
+
+          licensesAvailable = doctorProfile.licenses_count - (currentPatients ?? 0);
+          premiumGranted = licensesAvailable > 0;
+        }
+
         // Create doctor-patient relationship
         const { error: relError } = await serviceClient
           .from('doctor_patients')
@@ -145,8 +169,17 @@ serve(async (req) => {
           .update({ status: 'accepted' })
           .eq('id', request_id);
 
+        const message = premiumGranted
+          ? 'Solicitud aceptada. El paciente tiene acceso premium a través de tu licencia.'
+          : 'Solicitud aceptada';
+
         return new Response(
-          JSON.stringify({ success: true, message: 'Solicitud aceptada' }),
+          JSON.stringify({
+            success: true,
+            message,
+            premium_granted: premiumGranted,
+            licenses_available: Math.max(0, licensesAvailable - 1),
+          }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
