@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
@@ -117,7 +118,7 @@ serve(async (req) => {
 
     console.log("Extrayendo contenido del PDF con Lovable AI...");
 
-    const aiResponse = await fetch(
+    const aiResponse = await fetchWithTimeout(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
@@ -146,6 +147,7 @@ serve(async (req) => {
           ],
           max_tokens: 16000,
         }),
+        timeout: 60_000,
       }
     );
 

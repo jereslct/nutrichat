@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') || '*',
@@ -109,7 +110,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY no configurada');
     }
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetchWithTimeout('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -140,6 +141,7 @@ NO agregues texto adicional, solo el JSON.`
           }
         ],
       }),
+      timeout: 30_000,
     });
 
     if (!aiResponse.ok) {

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
@@ -73,13 +74,14 @@ serve(async (req) => {
 
     console.log("Creating MercadoPago preference...");
 
-    const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
+    const mpResponse = await fetchWithTimeout("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${MERCADOPAGO_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(preferenceData),
+      timeout: 10_000,
     });
 
     if (!mpResponse.ok) {

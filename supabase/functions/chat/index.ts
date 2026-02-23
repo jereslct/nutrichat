@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
@@ -247,7 +248,7 @@ ${diet.pdf_text}`;
 
     console.log("Llamando a Lovable AI...");
 
-    const aiResponse = await fetch(
+    const aiResponse = await fetchWithTimeout(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
@@ -270,6 +271,7 @@ ${diet.pdf_text}`;
           temperature: 0.4,
           max_tokens: 1000,
         }),
+        timeout: 30_000,
       }
     );
 
@@ -352,7 +354,7 @@ ${diet.pdf_text}`;
  */
 async function classifyMessage(message: string, apiKey: string): Promise<boolean> {
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
@@ -377,6 +379,7 @@ async function classifyMessage(message: string, apiKey: string): Promise<boolean
           temperature: 0.0,
           max_tokens: 3,
         }),
+        timeout: 10_000,
       }
     );
 
