@@ -13,20 +13,24 @@ serve(async (req) => {
   }
 
   try {
-    // Authenticate user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Usuario no autenticado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
-        },
-      }
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
 
-    if (authError || !user) {
+    if (authError || !claimsData?.claims) {
       console.error("Auth error:", authError);
       return new Response(
         JSON.stringify({ error: "Usuario no autenticado" }),
@@ -34,7 +38,9 @@ serve(async (req) => {
       );
     }
 
-    console.log("Creating preference for user:", user.id);
+    const userId = claimsData.claims.sub as string;
+    const userEmail = claimsData.claims.email as string;
+    console.log("Creating preference for user:", userId);
 
     const MERCADOPAGO_ACCESS_TOKEN = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");
     if (!MERCADOPAGO_ACCESS_TOKEN) {
@@ -56,7 +62,7 @@ serve(async (req) => {
         }
       ],
       payer: {
-        email: user.email,
+        email: userEmail,
       },
       back_urls: {
         success: `${origin}/chat?status=success`,
@@ -64,10 +70,10 @@ serve(async (req) => {
         pending: `${origin}/chat?status=pending`,
       },
       auto_return: "approved",
-      external_reference: user.id, // Store user_id for webhook
+      external_reference: userId, // Store user_id for webhook
       notification_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/payment-webhook`,
       metadata: {
-        user_id: user.id,
+        user_id: userId,
         plan_type: "monthly",
       },
     };

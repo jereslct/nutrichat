@@ -19,24 +19,31 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-
-    if (authError || !user) {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+
+    if (authError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'No autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
 
     const body = await req.json();
     const { action, target_id, request_id } = body;
@@ -73,7 +80,7 @@ serve(async (req) => {
     const { data: roleData } = await serviceClient
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     const userRole = roleData?.role;
@@ -85,7 +92,7 @@ serve(async (req) => {
         const { error: insertError } = await serviceClient
           .from('link_requests')
           .insert({
-            requester_id: user.id,
+            requester_id: userId,
             target_id: target_id,
             requester_role: userRole,
             status: 'pending',
@@ -113,7 +120,7 @@ serve(async (req) => {
           .from('link_requests')
           .select('*')
           .eq('id', request_id)
-          .eq('target_id', user.id)
+          .eq('target_id', userId)
           .eq('status', 'pending')
           .single();
 
@@ -125,8 +132,8 @@ serve(async (req) => {
         }
 
         // Determine doctor and patient IDs
-        const doctorId = request.requester_role === 'doctor' ? request.requester_id : user.id;
-        const patientId = request.requester_role === 'patient' ? request.requester_id : user.id;
+        const doctorId = request.requester_role === 'doctor' ? request.requester_id : userId;
+        const patientId = request.requester_role === 'patient' ? request.requester_id : userId;
 
         // Check doctor's license availability
         const { data: doctorProfile } = await serviceClient
@@ -189,7 +196,7 @@ serve(async (req) => {
           .from('link_requests')
           .update({ status: 'rejected' })
           .eq('id', request_id)
-          .eq('target_id', user.id);
+          .eq('target_id', userId);
 
         return new Response(
           JSON.stringify({ success: true, message: 'Solicitud rechazada' }),
@@ -202,7 +209,7 @@ serve(async (req) => {
           .from('link_requests')
           .delete()
           .eq('id', request_id)
-          .eq('requester_id', user.id)
+          .eq('requester_id', userId)
           .eq('status', 'pending');
 
         return new Response(
