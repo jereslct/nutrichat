@@ -306,6 +306,10 @@ export type Database = {
         Returns: number
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      patient_has_doctor_premium: {
+        Args: { p_patient_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "patient" | "doctor" | "super_admin"

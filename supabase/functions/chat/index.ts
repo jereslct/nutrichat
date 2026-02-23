@@ -78,7 +78,25 @@ serve(async (req) => {
     }
 
     // Check if user has active subscription or is premium (backwards compatibility)
-    const hasActiveSubscription = profile.subscription_status === 'active' || profile.is_premium === true;
+    const hasOwnSubscription = profile.subscription_status === 'active' || profile.is_premium === true;
+
+    // Check if patient is covered by a doctor's premium license
+    let hasDoctorPremium = false;
+    if (!hasOwnSubscription) {
+      const { data: doctorPremium, error: doctorPremiumError } = await supabaseAdmin
+        .rpc("patient_has_doctor_premium", { p_patient_id: userId });
+
+      if (doctorPremiumError) {
+        console.error("Error checking doctor premium:", doctorPremiumError);
+      } else {
+        hasDoctorPremium = doctorPremium === true;
+        if (hasDoctorPremium) {
+          console.log(`Usuario ${userId} tiene premium vía licencia de doctor`);
+        }
+      }
+    }
+
+    const hasActiveSubscription = hasOwnSubscription || hasDoctorPremium;
 
     // Check if user has reached free chat limit
     if (!hasActiveSubscription && profile.chat_count >= FREE_CHAT_LIMIT) {
