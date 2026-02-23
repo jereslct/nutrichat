@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Leaf,
   Search,
@@ -34,12 +35,14 @@ import {
   Loader2,
   CreditCard,
   UserCheck,
+  BarChart3,
 } from "lucide-react";
 import { LinkRequestsNotification } from "@/components/LinkRequestsNotification";
 import { AllPatientsDialog } from "@/components/AllPatientsDialog";
 import { PatientDetailDialog } from "@/components/PatientDetailDialog";
 import { PatientsListDialog } from "@/components/PatientsListDialog";
 import { PendingRequestsDialog } from "@/components/PendingRequestsDialog";
+import { DashboardAnalytics } from "@/components/DashboardAnalytics";
 import { useToast } from "@/hooks/use-toast";
 
 interface Patient {
@@ -266,7 +269,6 @@ const DoctorDashboard = () => {
             </Card>
           </PatientsListDialog>
           
-          {/* Licenses usage indicator */}
           <Card 
             className="bg-white border-neutral-200 cursor-pointer hover:border-primary hover:shadow-md transition-all interactive"
             onClick={() => navigate("/subscription?tab=profesionales")}
@@ -323,167 +325,186 @@ const DoctorDashboard = () => {
           </PendingRequestsDialog>
         </div>
 
-        <div className="md:hidden">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
-            <Input
-              placeholder="Buscar paciente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 bg-neutral-50 border-neutral-300"
-            />
-          </div>
-        </div>
+        <Tabs defaultValue="patients" className="w-full">
+          <TabsList className="bg-neutral-100 w-full sm:w-auto">
+            <TabsTrigger value="patients" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Pacientes
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analíticas
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-heading-3 text-neutral-900 mb-4">Tus pacientes</h2>
+          <TabsContent value="patients" className="mt-6">
+            <div className="md:hidden mb-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
+                <Input
+                  placeholder="Buscar paciente..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 bg-neutral-50 border-neutral-300"
+                />
+              </div>
+            </div>
 
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="bg-white border-neutral-200 animate-pulse">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <Skeleton className="h-12 w-12 rounded-full" />
-                        <div className="flex-1 space-y-2">
-                          <Skeleton className="h-4 w-32" />
-                          <Skeleton className="h-3 w-48" />
-                        </div>
-                      </div>
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-heading-3 text-neutral-900 mb-4">Tus pacientes</h2>
+
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <Card key={i} className="bg-white border-neutral-200 animate-pulse">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4">
+                            <Skeleton className="h-12 w-12 rounded-full" />
+                            <div className="flex-1 space-y-2">
+                              <Skeleton className="h-4 w-32" />
+                              <Skeleton className="h-3 w-48" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : filteredPatients.length === 0 ? (
+                  <Card className="bg-neutral-50 border-neutral-200">
+                    <CardContent className="p-8 sm:p-12 text-center">
+                      <Users className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
+                      <h3 className="text-heading-3 text-neutral-900 mb-2">No hay pacientes</h3>
+                      <p className="text-body text-neutral-600 mb-6">
+                        {searchTerm
+                          ? "No se encontraron pacientes con ese nombre"
+                          : "Invita a tu primer paciente para comenzar"}
+                      </p>
+                      {!searchTerm && (
+                        <AllPatientsDialog onUpdate={fetchPatients} />
+                      )}
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            ) : filteredPatients.length === 0 ? (
-              <Card className="bg-neutral-50 border-neutral-200">
-                <CardContent className="p-8 sm:p-12 text-center">
-                  <Users className="h-16 w-16 text-neutral-300 mx-auto mb-4" />
-                  <h3 className="text-heading-3 text-neutral-900 mb-2">No hay pacientes</h3>
-                  <p className="text-body text-neutral-600 mb-6">
-                    {searchTerm
-                      ? "No se encontraron pacientes con ese nombre"
-                      : "Invita a tu primer paciente para comenzar"}
-                  </p>
-                  {!searchTerm && (
-                    <AllPatientsDialog onUpdate={fetchPatients} />
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {filteredPatients.map((patient) => {
-                  const status = getActivityStatus(patient.last_activity);
-                  return (
-                    <Card
-                      key={patient.id}
-                      className="bg-white border-neutral-200 hover:border-primary hover:shadow-md transition-all cursor-pointer interactive"
-                    >
-                      <CardContent className="p-4 sm:p-5">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          <Avatar className="h-12 w-12 flex-shrink-0">
-                            <AvatarImage src={patient.avatar_url || undefined} />
-                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                              {getInitials(patient.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredPatients.map((patient) => {
+                      const status = getActivityStatus(patient.last_activity);
+                      return (
+                        <Card
+                          key={patient.id}
+                          className="bg-white border-neutral-200 hover:border-primary hover:shadow-md transition-all cursor-pointer interactive"
+                        >
+                          <CardContent className="p-4 sm:p-5">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                              <Avatar className="h-12 w-12 flex-shrink-0">
+                                <AvatarImage src={patient.avatar_url || undefined} />
+                                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                                  {getInitials(patient.full_name)}
+                                </AvatarFallback>
+                              </Avatar>
 
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-semibold text-neutral-900 truncate">
-                                {patient.full_name || "Sin nombre"}
-                              </h3>
-                              <div
-                                className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${
-                                  status === "active"
-                                    ? "bg-green-500"
-                                    : status === "moderate"
-                                    ? "bg-yellow-500"
-                                    : "bg-neutral-400"
-                                }`}
-                                title={
-                                  status === "active"
-                                    ? "Activo"
-                                    : status === "moderate"
-                                    ? "Moderado"
-                                    : "Inactivo"
-                                }
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-semibold text-neutral-900 truncate">
+                                    {patient.full_name || "Sin nombre"}
+                                  </h3>
+                                  <div
+                                    className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${
+                                      status === "active"
+                                        ? "bg-green-500"
+                                        : status === "moderate"
+                                        ? "bg-yellow-500"
+                                        : "bg-neutral-400"
+                                    }`}
+                                    title={
+                                      status === "active"
+                                        ? "Activo"
+                                        : status === "moderate"
+                                        ? "Moderado"
+                                        : "Inactivo"
+                                    }
+                                  />
+                                </div>
+                                <div className="flex items-center gap-4 text-xs sm:text-sm text-neutral-600 flex-wrap">
+                                  <span className="flex items-center gap-1">
+                                    <MessageSquare className={`h-3 w-3 ${patient.total_messages > 0 ? 'text-primary' : 'text-neutral-400'}`} />
+                                    {patient.total_messages > 0 ? `${patient.total_messages} chats` : "Sin chats"}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {formatLastActivity(patient.last_activity)}
+                                  </span>
+                                </div>
+                                {patient.has_diet && (
+                                  <Badge className="mt-2 text-xs bg-primary/10 text-primary border-0">
+                                    Plan cargado
+                                  </Badge>
+                                )}
+                              </div>
+
+                              <PatientDetailDialog
+                                patientId={patient.id}
+                                patientName={patient.full_name}
                               />
                             </div>
-                            <div className="flex items-center gap-4 text-xs sm:text-sm text-neutral-600 flex-wrap">
-                              <span className="flex items-center gap-1">
-                                <MessageSquare className={`h-3 w-3 ${patient.total_messages > 0 ? 'text-primary' : 'text-neutral-400'}`} />
-                                {patient.total_messages > 0 ? `${patient.total_messages} chats` : "Sin chats"}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {formatLastActivity(patient.last_activity)}
-                              </span>
-                            </div>
-                            {patient.has_diet && (
-                              <Badge className="mt-2 text-xs bg-primary/10 text-primary border-0">
-                                Plan cargado
-                              </Badge>
-                            )}
-                          </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
 
-                          <PatientDetailDialog
-                            patientId={patient.id}
-                            patientName={patient.full_name}
+                {pagination.total_pages > 1 && (
+                  <div className="flex justify-center pt-4">
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious
+                            onClick={() =>
+                              setPagination((p) => ({ ...p, page: Math.max(1, p.page - 1) }))
+                            }
+                            className={pagination.page === 1 ? "pointer-events-none opacity-50" : ""}
                           />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-
-            {pagination.total_pages > 1 && (
-              <div className="flex justify-center pt-4">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() =>
-                          setPagination((p) => ({ ...p, page: Math.max(1, p.page - 1) }))
-                        }
-                        className={pagination.page === 1 ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: pagination.total_pages }, (_, i) => i + 1).map(
-                      (page) => (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            onClick={() => setPagination((p) => ({ ...p, page }))}
-                            isActive={pagination.page === page}
-                          >
-                            {page}
-                          </PaginationLink>
                         </PaginationItem>
-                      )
-                    )}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() =>
-                          setPagination((p) => ({
-                            ...p,
-                            page: Math.min(pagination.total_pages, p.page + 1),
-                          }))
-                        }
-                        className={
-                          pagination.page === pagination.total_pages
-                            ? "pointer-events-none opacity-50"
-                            : ""
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
+                        {Array.from({ length: pagination.total_pages }, (_, i) => i + 1).map(
+                          (page) => (
+                            <PaginationItem key={page}>
+                              <PaginationLink
+                                onClick={() => setPagination((p) => ({ ...p, page }))}
+                                isActive={pagination.page === page}
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          )
+                        )}
+                        <PaginationItem>
+                          <PaginationNext
+                            onClick={() =>
+                              setPagination((p) => ({
+                                ...p,
+                                page: Math.min(pagination.total_pages, p.page + 1),
+                              }))
+                            }
+                            className={
+                              pagination.page === pagination.total_pages
+                                ? "pointer-events-none opacity-50"
+                                : ""
+                            }
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="mt-6">
+            <DashboardAnalytics />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
