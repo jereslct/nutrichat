@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
@@ -151,10 +152,11 @@ serve(async (req) => {
 
     console.log("Fetching resource from:", apiUrl);
 
-    const mpResponse = await fetch(apiUrl, {
+    const mpResponse = await fetchWithTimeout(apiUrl, {
       headers: {
         "Authorization": `Bearer ${MERCADOPAGO_ACCESS_TOKEN}`,
       },
+      timeout: 10_000,
     });
 
     if (!mpResponse.ok) {

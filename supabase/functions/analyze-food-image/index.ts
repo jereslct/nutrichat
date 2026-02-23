@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") || "*",
@@ -121,7 +122,7 @@ INSTRUCCIONES IMPORTANTES:
 
     console.log("Llamando a Lovable AI para análisis de imagen...");
 
-    const aiResponse = await fetch(
+    const aiResponse = await fetchWithTimeout(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
@@ -156,6 +157,7 @@ INSTRUCCIONES IMPORTANTES:
           ],
           max_tokens: 1000,
         }),
+        timeout: 30_000,
       }
     );
 
