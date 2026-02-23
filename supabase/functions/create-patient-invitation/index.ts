@@ -21,24 +21,31 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-
-    if (authError || !user) {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+
+    if (authError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'No autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
 
     // Use service role client to check secure user_roles table (not modifiable by users)
     const serviceClient = createClient(
@@ -50,7 +57,7 @@ serve(async (req) => {
     const { data: roleData } = await serviceClient
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (roleData?.role !== 'doctor') {
@@ -64,7 +71,7 @@ serve(async (req) => {
     const { data: userData } = await serviceClient
       .from('profiles')
       .select('full_name, licenses_count, subscription_status, plan_tier')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
 
     // Check if doctor has available licenses (only for premium plans with licenses)
@@ -78,7 +85,7 @@ serve(async (req) => {
       const { count: activePatients } = await serviceClient
         .from('doctor_patients')
         .select('*', { count: 'exact', head: true })
-        .eq('doctor_id', user.id)
+        .eq('doctor_id', userId)
         .not('patient_id', 'is', null);
 
       const usedLicenses = activePatients || 0;
@@ -95,7 +102,7 @@ serve(async (req) => {
         );
       }
       
-      console.log(`Doctor ${user.id} has ${licensesCount - usedLicenses} licenses available (${usedLicenses}/${licensesCount} used)`);
+      console.log(`Doctor ${userId} has ${licensesCount - usedLicenses} licenses available (${usedLicenses}/${licensesCount} used)`);
     }
 
     // Generar código único
@@ -123,7 +130,7 @@ serve(async (req) => {
     const { data: invitation, error: invError } = await supabaseClient
       .from('doctor_patients')
       .insert({
-        doctor_id: user.id,
+        doctor_id: userId,
         patient_id: null,
         invitation_code: invitationCode,
         assigned_by: 'invitation',

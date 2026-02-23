@@ -12,24 +12,31 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-
-    if (authError || !user) {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+
+    if (authError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'No autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
 
     // Get service role client for accessing all data
     const serviceClient = createClient(
@@ -41,7 +48,7 @@ serve(async (req) => {
     const { data: roleData } = await serviceClient
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (roleData?.role !== 'patient') {
@@ -92,7 +99,7 @@ serve(async (req) => {
     const { data: existingRelations } = await serviceClient
       .from('doctor_patients')
       .select('doctor_id')
-      .eq('patient_id', user.id);
+      .eq('patient_id', userId);
     
     const linkedDoctorIds = (existingRelations || []).map((r: any) => r.doctor_id);
 
@@ -100,7 +107,7 @@ serve(async (req) => {
     const { data: pendingRequests } = await serviceClient
       .from('link_requests')
       .select('*')
-      .or(`requester_id.eq.${user.id},target_id.eq.${user.id}`)
+      .or(`requester_id.eq.${userId},target_id.eq.${userId}`)
       .eq('status', 'pending');
 
     // Enriquecer datos de doctores
@@ -109,8 +116,8 @@ serve(async (req) => {
 
       const pendingRequest = (pendingRequests || []).find(
         (r: any) => 
-          (r.requester_id === user.id && r.target_id === doctor.id) ||
-          (r.target_id === user.id && r.requester_id === doctor.id)
+          (r.requester_id === userId && r.target_id === doctor.id) ||
+          (r.target_id === userId && r.requester_id === doctor.id)
       );
 
       return {
@@ -123,7 +130,7 @@ serve(async (req) => {
           id: pendingRequest.id,
           status: pendingRequest.status,
           requester_role: pendingRequest.requester_role,
-          is_incoming: pendingRequest.target_id === user.id,
+          is_incoming: pendingRequest.target_id === userId,
         } : null,
       };
     });

@@ -12,24 +12,31 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-
-    if (authError || !user) {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+
+    if (authError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'No autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
 
     // Get service role client
     const serviceClient = createClient(
@@ -41,7 +48,7 @@ serve(async (req) => {
     const { data: incomingRequests, error: incomingError } = await serviceClient
       .from('link_requests')
       .select('*')
-      .eq('target_id', user.id)
+      .eq('target_id', userId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
@@ -51,7 +58,7 @@ serve(async (req) => {
     const { data: outgoingRequests, error: outgoingError } = await serviceClient
       .from('link_requests')
       .select('*')
-      .eq('requester_id', user.id)
+      .eq('requester_id', userId)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
 

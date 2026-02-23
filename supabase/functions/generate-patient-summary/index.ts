@@ -18,24 +18,31 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-
-    if (authError || !user) {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+
+    if (authError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: 'No autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
 
     // Get service role client for accessing all data
     const serviceClient = createClient(
@@ -47,7 +54,7 @@ serve(async (req) => {
     const { data: roleData } = await serviceClient
       .from('user_roles')
       .select('role')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (roleData?.role !== 'doctor') {
@@ -71,7 +78,7 @@ serve(async (req) => {
     const { data: relationship } = await serviceClient
       .from('doctor_patients')
       .select('id')
-      .eq('doctor_id', user.id)
+      .eq('doctor_id', userId)
       .eq('patient_id', patient_id)
       .maybeSingle();
 
@@ -183,7 +190,7 @@ NO agregues texto adicional, solo el JSON.`
       .from('patient_summaries')
       .upsert({
         patient_id,
-        doctor_id: user.id,
+        doctor_id: userId,
         summary_text: JSON.stringify(parsedSummary),
         topics: parsedSummary.temas_principales || [],
         key_concerns: parsedSummary.preocupaciones_clave || [],

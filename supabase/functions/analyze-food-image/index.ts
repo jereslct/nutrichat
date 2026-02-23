@@ -16,25 +16,26 @@ serve(async (req) => {
   }
 
   try {
-    // Properly authenticate user with Supabase auth (verifies JWT signature)
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      throw new Error("Usuario no autenticado");
+    }
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      {
-        global: {
-          headers: { Authorization: req.headers.get("Authorization")! },
-        },
-      }
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
 
-    if (authError || !user) {
+    if (authError || !claimsData?.claims) {
       console.error("Auth error:", authError);
       throw new Error("Usuario no autenticado");
     }
 
-    const userId = user.id;
+    const userId = claimsData.claims.sub as string;
     console.log("Usuario autenticado para análisis de imagen:", userId);
 
     const supabaseAdmin = createClient(
