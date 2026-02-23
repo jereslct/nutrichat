@@ -92,9 +92,9 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
+
     const dataIdFromQuery = url.searchParams.get("data.id");
 
-    // Verify HMAC signature before processing
     const signatureValid = await verifyWebhookSignature(req, dataIdFromQuery);
     if (!signatureValid) {
       console.error("Webhook signature verification failed — rejecting request");
@@ -104,11 +104,9 @@ serve(async (req) => {
       });
     }
 
-    // MercadoPago sends topic and id as query params or in body
     let topic = url.searchParams.get("topic") || url.searchParams.get("type");
     let resourceId = url.searchParams.get("id") || dataIdFromQuery;
 
-    // Also try to get from body
     let body: any = {};
     try {
       body = await req.json();
@@ -121,28 +119,19 @@ serve(async (req) => {
 
     console.log("Webhook received - Topic:", topic, "Resource ID:", resourceId);
 
-    // MercadoPago sends different notification types
-    if (topic !== "payment" && topic !== "merchant_order") {
-      console.log("Ignoring non-payment notification:", topic);
-      return new Response(JSON.stringify({ received: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (topic !== "subscription_preapproval" && topic !== "preapproval") {
+      if (topic === "payment" || topic === "subscription_authorized_payment") {
+        console.log("Processing payment notification for subscription");
+      } else {
+        console.log("Ignoring notification type:", topic);
+        return new Response(JSON.stringify({ received: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
-    // For POST requests, try to get data from body
-    let body: any = {};
-    try {
-      body = await req.json();
-      console.log("Webhook body:", JSON.stringify(body));
-    } catch {
-      console.log("No JSON body in request");
-    }
-
-    // Get payment ID from body if not in URL
-    const finalPaymentId = paymentId || body?.data?.id;
-    
-    if (!finalPaymentId) {
-      console.log("No payment ID found, acknowledging webhook");
+    if (!resourceId) {
+      console.log("No resource ID found, acknowledging webhook");
       return new Response(JSON.stringify({ received: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -153,10 +142,16 @@ serve(async (req) => {
       throw new Error("MercadoPago access token not configured");
     }
 
-    // Get payment details from MercadoPago
-    console.log("Fetching payment details for ID:", finalPaymentId);
-    
-    const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${finalPaymentId}`, {
+    let apiUrl: string;
+    if (topic === "payment" || topic === "subscription_authorized_payment") {
+      apiUrl = `https://api.mercadopago.com/v1/payments/${resourceId}`;
+    } else {
+      apiUrl = `https://api.mercadopago.com/preapproval/${resourceId}`;
+    }
+
+    console.log("Fetching resource from:", apiUrl);
+
+    const mpResponse = await fetch(apiUrl, {
       headers: {
         "Authorization": `Bearer ${MERCADOPAGO_ACCESS_TOKEN}`,
       },
@@ -164,69 +159,122 @@ serve(async (req) => {
 
     if (!mpResponse.ok) {
       const errorText = await mpResponse.text();
-      console.error("Error fetching payment:", mpResponse.status, errorText);
-      // Return 200 to acknowledge receipt even if we can't process
-      return new Response(JSON.stringify({ received: true, error: "Could not fetch payment" }), {
+      console.error("Error fetching resource:", mpResponse.status, errorText);
+      return new Response(JSON.stringify({ received: true, error: "Could not fetch resource" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const payment = await mpResponse.json();
-    console.log("Payment status:", payment.status, "External reference:", payment.external_reference);
+    const resource = await mpResponse.json();
+    console.log("Resource status:", resource.status, "External reference:", resource.external_reference);
 
-    // Only process approved payments
-    if (payment.status !== "approved") {
-      console.log("Payment not approved, status:", payment.status);
-      return new Response(JSON.stringify({ received: true, status: payment.status }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get user_id from external_reference or metadata
-    const userId = payment.external_reference || payment.metadata?.user_id;
+    const externalRef = resource.external_reference || "";
+    const { userId, planTier, licenses } = parseExternalReference(externalRef);
     
+    console.log("Parsed external reference - userId:", userId, "planTier:", planTier, "licenses:", licenses);
+
     if (!userId) {
-      console.error("No user_id found in payment:", payment.id);
-      return new Response(JSON.stringify({ received: true, error: "No user_id in payment" }), {
+      console.error("No user_id found in resource");
+      return new Response(JSON.stringify({ received: true, error: "No user_id in resource" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log("Activating premium for user:", userId);
-
-    // Use service role to update user profile
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Update user to premium
+    let subscriptionStatus: string;
+    let shouldUpdateLicenses = false;
+    
+    if (topic === "payment" || topic === "subscription_authorized_payment") {
+      if (resource.status === "approved") {
+        subscriptionStatus = "active";
+        shouldUpdateLicenses = true;
+      } else {
+        console.log("Payment not approved:", resource.status);
+        return new Response(JSON.stringify({ received: true, status: resource.status }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      switch (resource.status) {
+        case "authorized":
+          subscriptionStatus = "active";
+          shouldUpdateLicenses = true;
+          break;
+        case "paused":
+          subscriptionStatus = "paused";
+          break;
+        case "cancelled":
+          subscriptionStatus = "cancelled";
+          break;
+        case "pending":
+          subscriptionStatus = "pending";
+          break;
+        default:
+          subscriptionStatus = resource.status;
+      }
+    }
+
+    console.log("Updating user:", userId, "to subscription_status:", subscriptionStatus);
+
+    const updateData: Record<string, any> = {
+      subscription_status: subscriptionStatus,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (topic === "subscription_preapproval" || topic === "preapproval") {
+      updateData.subscription_id = resource.id;
+    }
+
+    if (planTier) {
+      updateData.plan_tier = planTier;
+    }
+
+    if (shouldUpdateLicenses && licenses > 0) {
+      updateData.licenses_count = licenses;
+      console.log("Setting licenses_count to:", licenses);
+    }
+
+    if (subscriptionStatus === "active") {
+      updateData.is_premium = true;
+    } else if (subscriptionStatus === "cancelled" || subscriptionStatus === "paused") {
+      updateData.is_premium = false;
+      if (subscriptionStatus === "cancelled") {
+        updateData.licenses_count = 0;
+      }
+    }
+
+    console.log("Update data:", JSON.stringify(updateData));
+
     const { error: updateError } = await supabaseAdmin
       .from("profiles")
-      .update({ 
-        is_premium: true,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq("id", userId);
 
     if (updateError) {
       console.error("Error updating profile:", updateError);
-      throw new Error("Error activating premium status");
+      throw new Error("Error updating subscription status");
     }
 
-    console.log("Premium activated successfully for user:", userId);
+    console.log("Subscription status updated successfully for user:", userId);
+    console.log("Plan tier:", planTier, "Licenses:", licenses);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Premium activated",
-        user_id: userId 
+        message: "Subscription updated",
+        user_id: userId,
+        status: subscriptionStatus,
+        plan_tier: planTier,
+        licenses_count: shouldUpdateLicenses ? licenses : undefined,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Webhook error:", error);
-    // Always return 200 to MercadoPago to prevent retries
     return new Response(
       JSON.stringify({ received: true, error: error instanceof Error ? error.message : "Unknown error" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
