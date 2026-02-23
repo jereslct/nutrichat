@@ -1,43 +1,49 @@
 project_id = "coghazfvffthyrjsifrm"
 
 [functions.upload-pdf]
-verify_jwt = true
+verify_jwt = false
 
 [functions.chat]
-verify_jwt = true
+verify_jwt = false
 
 [functions.get-doctor-patients]
-verify_jwt = true
+verify_jwt = false
 
 [functions.generate-patient-summary]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-patient-invitation]
-verify_jwt = true
+verify_jwt = false
 
 [functions.get-all-patients]
-verify_jwt = true
+verify_jwt = false
 
 [functions.get-all-doctors]
-verify_jwt = true
+verify_jwt = false
 
 [functions.handle-link-request]
-verify_jwt = true
+verify_jwt = false
 
 [functions.get-pending-requests]
-verify_jwt = true
+verify_jwt = false
 
 [functions.analyze-food-image]
-verify_jwt = true
+verify_jwt = false
 
 [functions.create-preference]
-verify_jwt = true
+verify_jwt = false
 
 [functions.payment-webhook]
 verify_jwt = false
 
 [functions.create-subscription]
-verify_jwt = true
+verify_jwt = false
 
 [functions.mp-webhook]
+verify_jwt = false
+
+[functions.get-doctor-analytics]
+verify_jwt = false
+
+[functions.admin-dashboard]
 verify_jwt = false
