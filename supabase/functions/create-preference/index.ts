@@ -21,16 +21,16 @@ serve(async (req) => {
       );
     }
 
-    const supabaseClient = createClient(
+    const token = authHeader.replace("Bearer ", "");
+
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
-    if (authError || !claimsData?.claims) {
+    if (authError || !user) {
       console.error("Auth error:", authError);
       return new Response(
         JSON.stringify({ error: "Usuario no autenticado" }),
@@ -38,8 +38,8 @@ serve(async (req) => {
       );
     }
 
-    const userId = claimsData.claims.sub as string;
-    const userEmail = claimsData.claims.email as string;
+    const userId = user.id;
+    const userEmail = user.email ?? "";
     console.log("Creating preference for user:", userId);
 
     const MERCADOPAGO_ACCESS_TOKEN = Deno.env.get("MERCADOPAGO_ACCESS_TOKEN");

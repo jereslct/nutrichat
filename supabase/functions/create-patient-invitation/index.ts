@@ -29,29 +29,23 @@ serve(async (req) => {
       );
     }
 
-    const supabaseClient = createClient(
+    const token = authHeader.replace('Bearer ', '');
+
+    const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+    const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
 
-    if (authError || !claimsData?.claims) {
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = claimsData.claims.sub as string;
 
-    // Use service role client to check secure user_roles table (not modifiable by users)
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     // Verify doctor role from secure user_roles table
     const { data: roleData } = await serviceClient

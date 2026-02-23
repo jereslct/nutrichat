@@ -20,29 +20,23 @@ serve(async (req) => {
       );
     }
 
-    const supabaseClient = createClient(
+    const token = authHeader.replace('Bearer ', '');
+
+    const serviceClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
+    const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
 
-    if (authError || !claimsData?.claims) {
+    if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'No autenticado' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const userId = claimsData.claims.sub as string;
-
-    // Get service role client
-    const serviceClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const userId = user.id;
 
     // Get pending requests where user is the target (incoming)
     const { data: incomingRequests, error: incomingError } = await serviceClient
