@@ -46,12 +46,20 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
+interface RevenueBreakdownItem {
+  plan: string;
+  count: number;
+  unitPrice: number;
+  subtotal: number;
+}
+
 interface KPIs {
   totalUsers: number;
   premiumUsers: number;
   doctors: number;
   patients: number;
   monthlyRevenue: number;
+  revenueBreakdown: RevenueBreakdownItem[];
   recentUsers: number;
 }
 
@@ -65,6 +73,12 @@ interface UserData {
   created_at: string;
   avatar_url: string | null;
 }
+
+const PLAN_LABELS: Record<string, string> = {
+  individual: "Personal",
+  doctor_basic: "Médico Básico",
+  doctor_pro: "Médico Plus",
+};
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -292,9 +306,17 @@ const AdminDashboard = () => {
               <div className="text-2xl font-bold text-foreground">
                 {formatCurrency(kpis?.monthlyRevenue || 0)}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Estimado ({kpis?.premiumUsers || 0} × $16.999)
-              </p>
+              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                {kpis?.revenueBreakdown?.length ? (
+                  kpis.revenueBreakdown.map((item) => (
+                    <p key={item.plan}>
+                      {item.count} × {formatCurrency(item.unitPrice)} ({PLAN_LABELS[item.plan] || item.plan})
+                    </p>
+                  ))
+                ) : (
+                  <p>Sin suscripciones activas</p>
+                )}
+              </div>
             </CardContent>
           </Card>
 

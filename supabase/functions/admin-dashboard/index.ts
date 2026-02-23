@@ -119,8 +119,28 @@ serve(async (req) => {
     const doctors = usersWithDetails.filter((u) => u.db_role === "doctor").length;
     const patients = usersWithDetails.filter((u) => u.db_role === "patient").length;
     
-    // Monthly revenue estimation (based on premium users * $16.999)
-    const monthlyRevenue = premiumUsers * 16999;
+    const PLAN_PRICES: Record<string, number> = {
+      individual: 16999,
+      doctor_basic: 27999,
+      doctor_pro: 43999,
+    };
+
+    const revenueBreakdown: { plan: string; count: number; unitPrice: number; subtotal: number }[] = [];
+    const planCounts = new Map<string, number>();
+
+    for (const u of usersWithDetails) {
+      if (!u.is_premium || !u.plan_tier) continue;
+      const price = PLAN_PRICES[u.plan_tier];
+      if (!price) continue; // patient_premium (admin-granted) or unknown → no revenue
+      planCounts.set(u.plan_tier, (planCounts.get(u.plan_tier) || 0) + 1);
+    }
+
+    for (const [plan, count] of planCounts.entries()) {
+      const unitPrice = PLAN_PRICES[plan];
+      revenueBreakdown.push({ plan, count, unitPrice, subtotal: count * unitPrice });
+    }
+
+    const monthlyRevenue = revenueBreakdown.reduce((sum, r) => sum + r.subtotal, 0);
 
     // Get user growth data (last 30 days)
     const thirtyDaysAgo = new Date();
@@ -130,7 +150,7 @@ serve(async (req) => {
       (u) => new Date(u.created_at) >= thirtyDaysAgo
     ).length;
 
-    console.log(`Dashboard data: ${totalUsers} users, ${premiumUsers} premium, ${doctors} doctors`);
+    console.log(`Dashboard data: ${totalUsers} users, ${premiumUsers} premium, ${doctors} doctors, revenue: ${monthlyRevenue}`);
 
     return new Response(
       JSON.stringify({
@@ -140,6 +160,7 @@ serve(async (req) => {
           doctors,
           patients,
           monthlyRevenue,
+          revenueBreakdown,
           recentUsers,
         },
         users: usersWithDetails,
