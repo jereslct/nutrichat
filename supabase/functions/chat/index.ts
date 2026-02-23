@@ -250,7 +250,7 @@ ${diet.pdf_text}`;
               content: c.parts[0].text
             }))
           ],
-          temperature: 0.7,
+          temperature: 0.4,
           max_tokens: 1000,
         }),
       }
@@ -349,6 +349,20 @@ function sanitizeInput(input: string): string {
     /<\|im_start\|>/gi,
     /assistant:/gi,
     /human:/gi,
+    // Spanish injection patterns
+    /ignor[aá](r?)?\s+(todas?\s+)?(las?\s+)?(instrucciones|reglas|indicaciones|prompts?)\s+(anteriores|previas|de arriba)/gi,
+    /olv[ií]da(te)?\s+(de\s+)?(todas?\s+)?(las?\s+)?(instrucciones|reglas|indicaciones)\s+(anteriores|previas)/gi,
+    /ahora\s+(sos|eres|ser[aá]s)\s+/gi,
+    /a\s+partir\s+de\s+ahora/gi,
+    /nuevas?\s+instrucciones?:/gi,
+    /cambi[aá]\s+(tu|de)\s+(rol|comportamiento|personalidad|funci[oó]n)/gi,
+    /actu[aá]\s+como\s+(si\s+fueras|un|una)/gi,
+    /respond[eé]\s+(solo\s+)?en\s+(ingl[eé]s|c[oó]digo|python|javascript)/gi,
+    /no\s+(sigas|cumplas|obedezcas|respetes)\s+(las\s+)?(reglas|instrucciones|restricciones)/gi,
+    /simul[aá]\s+(ser|que\s+(sos|eres))/gi,
+    /modo\s+(desarrollador|programador|hacker|admin|dios|god)/gi,
+    /jailbreak/gi,
+    /DAN\s*mode/gi,
   ];
 
   for (const pattern of injectionPatterns) {
