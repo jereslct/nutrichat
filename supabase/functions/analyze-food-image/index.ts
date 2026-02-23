@@ -21,27 +21,22 @@ serve(async (req) => {
       throw new Error("Usuario no autenticado");
     }
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: authError } = await supabaseClient.auth.getClaims(token);
-
-    if (authError || !claimsData?.claims) {
-      console.error("Auth error:", authError);
-      throw new Error("Usuario no autenticado");
-    }
-
-    const userId = claimsData.claims.sub as string;
-    console.log("Usuario autenticado para análisis de imagen:", userId);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      throw new Error("Usuario no autenticado");
+    }
+
+    const userId = user.id;
+    console.log("Usuario autenticado para análisis de imagen:", userId);
 
     // ========== RATE LIMITING FOR IMAGES ==========
     const { data: currentImageCount, error: imageCountError } = await supabaseAdmin
