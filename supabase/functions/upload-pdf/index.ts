@@ -145,7 +145,7 @@ serve(async (req) => {
               ]
             }
           ],
-          max_tokens: 16000,
+          max_tokens: 8000,
         }),
         timeout: 60_000,
       }

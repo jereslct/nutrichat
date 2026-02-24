@@ -92,7 +92,7 @@ serve(async (req) => {
       .select('content, role, created_at')
       .eq('user_id', patient_id)
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(50);
 
     if (messagesError) throw messagesError;
 
@@ -103,10 +103,16 @@ serve(async (req) => {
       );
     }
 
+    // Filtrar mensajes triviales antes de enviar a la IA
+    const TRIVIAL_PATTERNS = /^(ok|okay|gracias|thanks|hola|hi|hello|sí|si|no|bien|perfecto|dale|genial|claro|entendido|bueno)\s*[!.]*$/i;
+    const meaningfulMessages = messages.filter(m =>
+      m.content.trim().length > 20 && !TRIVIAL_PATTERNS.test(m.content.trim())
+    );
+
     // Preparar historial para la IA
-    const chatHistory = messages.reverse().map(m => 
+    const chatHistory = meaningfulMessages.reverse().map(m =>
       `${m.role === 'user' ? 'Paciente' : 'Asistente'}: ${m.content}`
-    ).join('\n\n');
+    ).join('\n');
 
     // Llamar a Lovable AI para generar el resumen
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -122,6 +128,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
+        max_tokens: 1500,
         messages: [
           {
             role: 'system',
@@ -181,7 +188,7 @@ NO agregues texto adicional, solo el JSON.`
 
     // Guardar en la base de datos
     const lastMessageDate = messages[messages.length - 1]?.created_at;
-    const patientMessagesCount = messages.filter(m => m.role === 'user').length;
+    const patientMessagesCount = meaningfulMessages.filter(m => m.role === 'user').length;
 
     const { data: savedSummary, error: saveError } = await serviceClient
       .from('patient_summaries')
