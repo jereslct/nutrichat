@@ -52,6 +52,7 @@ export type Database = {
       diets: {
         Row: {
           created_at: string | null
+          diet_summary: string | null
           file_name: string
           file_url: string | null
           id: string
@@ -61,6 +62,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          diet_summary?: string | null
           file_name: string
           file_url?: string | null
           id?: string
@@ -70,6 +72,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          diet_summary?: string | null
           file_name?: string
           file_url?: string | null
           id?: string
@@ -147,6 +150,7 @@ export type Database = {
           id: string
           key_concerns: Json | null
           last_chat_date: string | null
+          last_summarized_at: string | null
           patient_id: string
           summary_text: string
           topics: Json | null
@@ -159,6 +163,7 @@ export type Database = {
           id?: string
           key_concerns?: Json | null
           last_chat_date?: string | null
+          last_summarized_at?: string | null
           patient_id: string
           summary_text: string
           topics?: Json | null
@@ -171,6 +176,7 @@ export type Database = {
           id?: string
           key_concerns?: Json | null
           last_chat_date?: string | null
+          last_summarized_at?: string | null
           patient_id?: string
           summary_text?: string
           topics?: Json | null
@@ -223,6 +229,39 @@ export type Database = {
           subscription_id?: string | null
           subscription_status?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      token_usage: {
+        Row: {
+          completion_tokens: number | null
+          created_at: string | null
+          function_name: string
+          id: string
+          model: string
+          prompt_tokens: number | null
+          total_tokens: number | null
+          user_id: string | null
+        }
+        Insert: {
+          completion_tokens?: number | null
+          created_at?: string | null
+          function_name: string
+          id?: string
+          model?: string
+          prompt_tokens?: number | null
+          total_tokens?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          completion_tokens?: number | null
+          created_at?: string | null
+          function_name?: string
+          id?: string
+          model?: string
+          prompt_tokens?: number | null
+          total_tokens?: number | null
+          user_id?: string | null
         }
         Relationships: []
       }
