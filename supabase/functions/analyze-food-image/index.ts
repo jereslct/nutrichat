@@ -75,7 +75,7 @@ serve(async (req) => {
     console.log("Procesando imagen para dieta:", dietId, "comentario:", userComment || "(ninguno)");
 
     // Get user's diet
-    const { data: diet, error: dietError } = await supabaseClient
+    const { data: diet, error: dietError } = await supabaseAdmin
       .from("diets")
       .select("*")
       .eq("id", dietId)
