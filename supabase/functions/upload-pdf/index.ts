@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { logTokenUsage } from "../_shared/tokenTracking.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -158,6 +159,8 @@ serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
+    await logTokenUsage(supabaseAdmin, userId, "upload-pdf", aiData);
+
     let extractedText = aiData.choices?.[0]?.message?.content;
 
     if (!extractedText || extractedText.length < 50) {

@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { logTokenUsage } from "../_shared/tokenTracking.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -289,8 +290,10 @@ ${diet.pdf_text?.slice(0, 6000) || ''}${(diet.pdf_text?.length ?? 0) > 6000 ? '\
     }
 
     const aiData = await aiResponse.json();
+    await logTokenUsage(supabaseAdmin, userId, "chat", aiData);
+
     const assistantResponse = aiData.choices?.[0]?.message?.content;
-    
+
     if (!assistantResponse) {
       console.error("Respuesta inesperada de Lovable AI:", JSON.stringify(aiData));
       throw new Error("Respuesta inválida de la IA");

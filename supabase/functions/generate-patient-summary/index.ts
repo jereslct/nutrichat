@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { logTokenUsage } from "../_shared/tokenTracking.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -162,6 +163,8 @@ NO agregues texto adicional, solo el JSON.`
     }
 
     const aiData = await aiResponse.json();
+    await logTokenUsage(serviceClient, userId, "generate-patient-summary", aiData);
+
     const summaryText = aiData.choices[0].message.content;
 
     // Parsear el JSON del resumen (manejar respuestas con markdown)
