@@ -87,15 +87,47 @@ serve(async (req) => {
       );
     }
 
-    // Obtener mensajes del chat del paciente (últimos 100) usando service role
-    const { data: messages, error: messagesError } = await serviceClient
+    // ========== FETCH EXISTING SUMMARY ==========
+    const { data: existingSummary } = await serviceClient
+      .from('patient_summaries')
+      .select('id, summary_text, last_summarized_at')
+      .eq('patient_id', patient_id)
+      .eq('doctor_id', userId)
+      .maybeSingle();
+
+    const isIncremental = !!existingSummary?.last_summarized_at;
+
+    // ========== FETCH MESSAGES ==========
+    // Incremental: only messages newer than last_summarized_at
+    // Full: last 50 messages
+    let messagesQuery = serviceClient
       .from('chat_messages')
       .select('content, role, created_at')
       .eq('user_id', patient_id)
       .order('created_at', { ascending: false })
       .limit(50);
 
+    if (isIncremental) {
+      messagesQuery = messagesQuery.gt('created_at', existingSummary.last_summarized_at);
+    }
+
+    const { data: messages, error: messagesError } = await messagesQuery;
+
     if (messagesError) throw messagesError;
+
+    // No new messages since last summary — return cached result
+    if (isIncremental && (!messages || messages.length === 0)) {
+      console.log(`No hay mensajes nuevos para ${patient_id} desde ${existingSummary.last_summarized_at}`);
+      const cached = JSON.parse(existingSummary.summary_text);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          cached: true,
+          summary: { ...cached, id: existingSummary.id },
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!messages || messages.length === 0) {
       return new Response(
@@ -115,6 +147,36 @@ serve(async (req) => {
       `${m.role === 'user' ? 'Paciente' : 'Asistente'}: ${m.content}`
     ).join('\n');
 
+    // ========== BUILD PROMPT ==========
+    const JSON_SCHEMA = `{
+  "resumen_general": "string - Resumen ejecutivo de 2-3 líneas",
+  "temas_principales": ["string", ...] - Array de 3-5 temas principales discutidos,
+  "preocupaciones_clave": ["string", ...] - Array de 2-4 preocupaciones o problemas identificados,
+  "patrones_detectados": "string - Descripción de patrones de comportamiento o consultas recurrentes",
+  "recomendaciones_medicas": "string - Sugerencias para el médico sobre seguimiento o áreas de atención"
+}`;
+
+    const systemContent = isIncremental
+      ? `Eres un asistente médico. Ya existe un resumen previo del paciente. Tu tarea es ACTUALIZARLO incorporando solo los mensajes nuevos que se te envían.
+
+RESUMEN PREVIO:
+${existingSummary.summary_text}
+
+Devolvé un objeto JSON con la misma estructura, fusionando la información anterior con la nueva. No elimines datos relevantes del resumen previo.
+Estructura: ${JSON_SCHEMA}
+
+NO agregues texto adicional, solo el JSON.`
+      : `Eres un asistente médico especializado en análisis de conversaciones nutricionales.
+Tu tarea es analizar el historial de chat y generar un resumen médico estructurado en formato JSON.
+
+Estructura: ${JSON_SCHEMA}
+
+NO agregues texto adicional, solo el JSON.`;
+
+    const userContent = isIncremental
+      ? `Mensajes nuevos a incorporar al resumen:\n\n${chatHistory}`
+      : `Analiza el siguiente historial de conversaciones del paciente:\n\n${chatHistory}`;
+
     // Llamar a Lovable AI para generar el resumen
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
@@ -130,27 +192,10 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         max_tokens: 1500,
+        response_format: { type: 'json_object' },
         messages: [
-          {
-            role: 'system',
-            content: `Eres un asistente médico especializado en análisis de conversaciones nutricionales. 
-Tu tarea es analizar el historial de chat entre un paciente y su asistente nutricional, y generar un resumen médico estructurado en formato JSON.
-
-Debes devolver SOLO un objeto JSON válido con esta estructura exacta:
-{
-  "resumen_general": "string - Resumen ejecutivo de 2-3 líneas",
-  "temas_principales": ["string", "string", ...] - Array de 3-5 temas principales discutidos,
-  "preocupaciones_clave": ["string", "string", ...] - Array de 2-4 preocupaciones o problemas identificados,
-  "patrones_detectados": "string - Descripción de patrones de comportamiento o consultas recurrentes",
-  "recomendaciones_medicas": "string - Sugerencias para el médico sobre seguimiento o áreas de atención"
-}
-
-NO agregues texto adicional, solo el JSON.`
-          },
-          {
-            role: 'user',
-            content: `Analiza el siguiente historial de conversaciones del paciente:\n\n${chatHistory}`
-          }
+          { role: 'system', content: systemContent },
+          { role: 'user', content: userContent },
         ],
       }),
       timeout: 30_000,
@@ -167,31 +212,19 @@ NO agregues texto adicional, solo el JSON.`
 
     const summaryText = aiData.choices[0].message.content;
 
-    // Parsear el JSON del resumen (manejar respuestas con markdown)
+    // response_format: json_object garantiza JSON válido — parse directo
     let parsedSummary;
     try {
-      let jsonText = summaryText.trim();
-      
-      // Remover bloques de código markdown si existen
-      if (jsonText.startsWith('```json')) {
-        jsonText = jsonText.slice(7);
-      } else if (jsonText.startsWith('```')) {
-        jsonText = jsonText.slice(3);
-      }
-      if (jsonText.endsWith('```')) {
-        jsonText = jsonText.slice(0, -3);
-      }
-      jsonText = jsonText.trim();
-      
-      parsedSummary = JSON.parse(jsonText);
+      parsedSummary = JSON.parse(summaryText);
     } catch (e) {
       console.error('Error parseando JSON de IA:', summaryText);
       throw new Error('La IA no devolvió un JSON válido');
     }
 
-    // Guardar en la base de datos
+    // ========== SAVE ==========
     const lastMessageDate = messages[messages.length - 1]?.created_at;
     const patientMessagesCount = meaningfulMessages.filter(m => m.role === 'user').length;
+    const now = new Date().toISOString();
 
     const { data: savedSummary, error: saveError } = await serviceClient
       .from('patient_summaries')
@@ -203,6 +236,7 @@ NO agregues texto adicional, solo el JSON.`
         key_concerns: parsedSummary.preocupaciones_clave || [],
         chat_messages_analyzed: patientMessagesCount,
         last_chat_date: lastMessageDate,
+        last_summarized_at: now,
       }, {
         onConflict: 'patient_id,doctor_id'
       })

@@ -227,15 +227,31 @@ ${diet.diet_summary || diet.pdf_text?.slice(0, 6000) || ''}${(!diet.diet_summary
 
     // Construir mensajes para la API
     const contents = [];
-    
-    // Agregar historial reciente (invertido para orden cronológico)
+
+    // Agregar historial con compresión por ventana deslizante:
+    // - Últimos 4 mensajes: completos
+    // - Mensajes más viejos: solo turno del usuario, truncado a 150 chars
     if (recentMessages && recentMessages.length > 0) {
-      recentMessages.reverse().forEach(msg => {
-        contents.push({
-          role: msg.role === "assistant" ? "model" : "user",
-          parts: [{ text: msg.content }]
-        });
+      const FULL_RECENT = 4;
+      const chronological = [...recentMessages].reverse();
+      const cutoff = chronological.length - FULL_RECENT;
+
+      chronological.forEach((msg, i) => {
+        if (i < cutoff) {
+          // Mensaje antiguo: descartar respuestas del asistente, truncar pregunta del usuario
+          if (msg.role !== "user") return;
+          contents.push({
+            role: "user",
+            parts: [{ text: msg.content.slice(0, 150) }]
+          });
+        } else {
+          contents.push({
+            role: msg.role === "assistant" ? "model" : "user",
+            parts: [{ text: msg.content }]
+          });
+        }
       });
+
       contents.push({
         role: "user",
         parts: [{ text: sanitizedMessage }]
