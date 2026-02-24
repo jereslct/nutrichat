@@ -54,11 +54,10 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 100); // Max 100
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '10'), 100);
     const search = url.searchParams.get('search') || '';
     const offset = (page - 1) * limit;
 
-    // Validate pagination params
     if (page < 1 || limit < 1) {
       return new Response(
         JSON.stringify({ error: 'Parámetros de paginación inválidos' }),
@@ -66,79 +65,99 @@ serve(async (req) => {
       );
     }
 
-    // Obtener pacientes del médico
-    const { data: relationships, error: relError } = await serviceClient
+    // Fetch all patient IDs for this doctor in one query (no pagination here —
+    // search filtering happens later, so pagination must be applied after)
+    const { data: allRelationships, error: relError } = await serviceClient
       .from('doctor_patients')
-      .select('id, assigned_at, patient_id')
+      .select('assigned_at, patient_id')
       .eq('doctor_id', userId)
       .not('patient_id', 'is', null)
-      .order('assigned_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+      .order('assigned_at', { ascending: false });
 
     if (relError) throw relError;
 
-    const { count } = await serviceClient
-      .from('doctor_patients')
-      .select('*', { count: 'exact', head: true })
-      .eq('doctor_id', userId)
-      .not('patient_id', 'is', null);
+    if (!allRelationships || allRelationships.length === 0) {
+      return new Response(
+        JSON.stringify({ patients: [], pagination: { page, limit, total: 0, total_pages: 0 } }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Enriquecer datos de cada paciente
-    const patientsData = await Promise.all(
-      (relationships || []).map(async (rel: any) => {
-        const patientId = rel.patient_id;
+    const allPatientIds = allRelationships.map((r: any) => r.patient_id as string);
 
-        // Get patient profile
-        const { data: profile } = await serviceClient
-          .from('profiles')
-          .select('id, full_name, avatar_url')
-          .eq('id', patientId)
-          .single();
+    // BATCH 1: profiles — search filter applied at DB level
+    let profilesQuery = serviceClient
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', allPatientIds);
 
-        // Última actividad en chat
-        const { data: lastMessage } = await serviceClient
-          .from('chat_messages')
-          .select('created_at')
-          .eq('user_id', patientId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+    if (search) {
+      profilesQuery = profilesQuery.ilike('full_name', `%${search}%`);
+    }
 
-        // Total de mensajes (solo del paciente, no del asistente)
-        const { count: messageCount } = await serviceClient
-          .from('chat_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', patientId)
-          .eq('role', 'user');
+    // BATCH 2: messages (last activity + user count aggregated in JS)
+    // BATCH 3: diet existence
+    // All 3 run in parallel
+    const [
+      { data: profiles },
+      { data: allMessages },
+      { data: diets },
+    ] = await Promise.all([
+      profilesQuery,
+      serviceClient
+        .from('chat_messages')
+        .select('user_id, created_at, role')
+        .in('user_id', allPatientIds)
+        .order('created_at', { ascending: false }),
+      serviceClient
+        .from('diets')
+        .select('user_id')
+        .in('user_id', allPatientIds),
+    ]);
 
-        // Verificar si tiene dieta
-        const { data: diet } = await serviceClient
-          .from('diets')
-          .select('id')
-          .eq('user_id', patientId)
-          .limit(1)
-          .maybeSingle();
+    // Aggregate messages in a single pass
+    const lastActivityMap = new Map<string, string>();
+    const messageCountMap = new Map<string, number>();
+    for (const msg of (allMessages || [])) {
+      if (!lastActivityMap.has(msg.user_id)) {
+        lastActivityMap.set(msg.user_id, msg.created_at);
+      }
+      if (msg.role === 'user') {
+        messageCountMap.set(msg.user_id, (messageCountMap.get(msg.user_id) || 0) + 1);
+      }
+    }
 
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+    const dietSet = new Set((diets || []).map((d: any) => d.user_id as string));
+    const matchedIds = new Set((profiles || []).map((p: any) => p.id as string));
+
+    // Build full list filtered by search, maintaining assigned_at order
+    const fullList = allRelationships
+      .filter((r: any) => matchedIds.has(r.patient_id))
+      .map((r: any) => {
+        const profile = profileMap.get(r.patient_id);
         return {
-          id: profile?.id || patientId,
+          id: r.patient_id,
           full_name: profile?.full_name || null,
           avatar_url: profile?.avatar_url || null,
-          last_activity: lastMessage?.created_at || null,
-          total_messages: messageCount || 0,
-          has_diet: !!diet,
-          assigned_at: rel.assigned_at,
+          last_activity: lastActivityMap.get(r.patient_id) || null,
+          total_messages: messageCountMap.get(r.patient_id) || 0,
+          has_diet: dietSet.has(r.patient_id),
+          assigned_at: r.assigned_at,
         };
-      })
-    );
+      });
+
+    const total = fullList.length;
+    const paginatedList = fullList.slice(offset, offset + limit);
 
     return new Response(
       JSON.stringify({
-        patients: patientsData,
+        patients: paginatedList,
         pagination: {
           page,
           limit,
-          total: count || 0,
-          total_pages: Math.ceil((count || 0) / limit),
+          total,
+          total_pages: Math.ceil(total / limit),
         },
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
