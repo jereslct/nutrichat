@@ -45,7 +45,7 @@ serve(async (req) => {
       );
     }
 
-
+    const userId = user.id;
 
     // Verify doctor role from secure user_roles table
     const { data: roleData } = await serviceClient
@@ -104,7 +104,7 @@ serve(async (req) => {
     let attempts = 0;
 
     while (attempts < 5) {
-      const { data: existing } = await supabaseClient
+      const { data: existing } = await serviceClient
         .from('doctor_patients')
         .select('id')
         .eq('invitation_code', invitationCode)
@@ -121,7 +121,7 @@ serve(async (req) => {
     }
 
     // Crear invitación pendiente
-    const { data: invitation, error: invError } = await supabaseClient
+    const { data: invitation, error: invError } = await serviceClient
       .from('doctor_patients')
       .insert({
         doctor_id: userId,
