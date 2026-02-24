@@ -96,7 +96,7 @@ serve(async (req) => {
     const systemPrompt = `Eres un asistente nutricional amigable y empático. Tu tarea es analizar fotos de comida que el usuario te envía.
 
 PLAN NUTRICIONAL DEL USUARIO:
-${diet.pdf_text?.slice(0, 3000) || ''}${(diet.pdf_text?.length ?? 0) > 3000 ? '\n[... contenido truncado ...]' : ''}
+${diet.diet_summary || diet.pdf_text?.slice(0, 3000) || ''}${(!diet.diet_summary && (diet.pdf_text?.length ?? 0) > 3000) ? '\n[... contenido truncado ...]' : ''}
 
 INSTRUCCIONES IMPORTANTES:
 1. Primero, verifica si la imagen es de comida. Si NO es comida, responde amablemente indicando que solo puedes analizar fotos de alimentos.

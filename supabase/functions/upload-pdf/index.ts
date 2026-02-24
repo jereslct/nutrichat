@@ -175,6 +175,60 @@ serve(async (req) => {
 
     console.log("Texto extraído y limpiado, longitud:", extractedText.length);
 
+    // ========== GENERATE DIET SUMMARY ==========
+    // One-time call at upload time. Result (~500-800 tokens) is reused on every
+    // chat call, replacing the full pdf_text in the system prompt.
+    let dietSummary: string | null = null;
+    try {
+      console.log("Generando resumen estructurado de la dieta...");
+      const summaryResponse = await fetchWithTimeout(
+        "https://ai.gateway.lovable.dev/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            max_tokens: 800,
+            messages: [
+              {
+                role: "user",
+                content: `Generá un resumen estructurado y conciso de este plan nutricional. Incluí:
+- Objetivo principal del plan
+- Distribución de macronutrientes si se especifica
+- Estructura de comidas diarias (desayuno, almuerzo, cena, colaciones) con ejemplos clave
+- Alimentos principales permitidos y prohibidos
+- Porciones o cantidades relevantes
+- Consideraciones especiales (intolerancias, suplementos, hidratación, etc.)
+
+Sé conciso pero completo. Máximo 600 palabras. Respondé SOLO con el resumen, sin introducción ni comentarios.
+
+PLAN NUTRICIONAL:
+${extractedText.slice(0, 12000)}`,
+              },
+            ],
+          }),
+          timeout: 45_000,
+        }
+      );
+
+      if (summaryResponse.ok) {
+        const summaryData = await summaryResponse.json();
+        await logTokenUsage(supabaseAdmin, userId, "upload-pdf-summary", summaryData);
+        dietSummary = summaryData.choices?.[0]?.message?.content ?? null;
+        if (dietSummary) {
+          console.log("Resumen generado, longitud:", dietSummary.length);
+        }
+      } else {
+        console.warn("No se pudo generar resumen, se usará pdf_text completo:", summaryResponse.status);
+      }
+    } catch (summaryError) {
+      // Non-critical — proceed without summary, chat will fall back to truncated pdf_text
+      console.warn("Error generando resumen de dieta:", summaryError instanceof Error ? summaryError.message : summaryError);
+    }
+
     // Guardar en la base de datos
     const { data: diet, error: insertError } = await supabaseClient
       .from("diets")
@@ -182,6 +236,7 @@ serve(async (req) => {
         user_id: userId,
         file_name: sanitizedFileName,
         pdf_text: extractedText,
+        diet_summary: dietSummary,
       })
       .select()
       .single();
