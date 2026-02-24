@@ -146,25 +146,7 @@ case 'cancel_request': {
 
 ## 2. SEGURIDAD
 
-### 2.1 CORS abierto a todos los orígenes
-
-**Afecta:** TODAS las 16 edge functions
-**Severidad:** MEDIA-ALTA
-
-```typescript
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",  // ← cualquier sitio web puede llamar a estas APIs
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-```
-
-**Riesgo:** Cualquier sitio web malicioso puede hacer requests a las APIs de NutriChat en nombre de un usuario autenticado (si el navegador envía cookies/tokens). Esto facilita ataques CSRF y permite que terceros consuman la API sin restricción.
-
-**Recomendación:** Configurar el origen permitido explícitamente (ej: `https://nutrichat.com`, `https://*.lovableproject.com`).
-
----
-
-### 2.2 Webhook de pagos sin verificación de firma
+### 2.1 Webhook de pagos sin verificación de firma
 
 **Archivo:** `supabase/functions/payment-webhook/index.ts`
 **Severidad:** CRÍTICA
@@ -182,7 +164,7 @@ Si el atacante conoce un `payment_id` válido, puede reactivar suscripciones can
 
 ---
 
-### 2.3 Email de admin hardcodeado
+### 2.2 Email de admin hardcodeado
 
 **Archivo:** `supabase/functions/admin-dashboard/index.ts:9`
 **Severidad:** MEDIA
@@ -200,7 +182,7 @@ const SUPER_ADMIN_EMAIL = "admin@nutrichat.com";
 
 ---
 
-### 2.4 Stack traces expuestos al cliente
+### 2.3 Stack traces expuestos al cliente
 
 **Archivo:** `supabase/functions/create-subscription/index.ts:228-231`
 **Severidad:** MEDIA
@@ -219,7 +201,7 @@ return new Response(
 
 ---
 
-### 2.5 Service role key usado para verificar tokens de usuario
+### 2.4 Service role key usado para verificar tokens de usuario
 
 **Afecta:** `analyze-food-image`, `create-patient-invitation`, `handle-link-request`, `get-doctor-patients`, `get-all-doctors`, `get-all-patients`, `get-pending-requests`, `get-doctor-analytics`, `generate-patient-summary`
 **Severidad:** MEDIA
@@ -509,11 +491,10 @@ Si el modelo no devuelve JSON válido (cosa que ocurre con frecuencia), la funci
 | 1.5 | Bug | MENOR | `handle-link-request` | Header `ContentError` |
 | 1.6 | Bug | ALTA | `handle-link-request` | Cancel filtra por `rate_limit` |
 | 1.7 | Bug | ERROR SINTAXIS | `get-pending-requests` | Header JSON duplicado |
-| 2.1 | Seguridad | MEDIA-ALTA | Todos | CORS `*` abierto |
-| 2.2 | Seguridad | CRÍTICA | `payment-webhook` | Sin verificación de firma |
-| 2.3 | Seguridad | MEDIA | `admin-dashboard` | Email admin hardcodeado |
-| 2.4 | Seguridad | MEDIA | `create-subscription` | Stack traces al cliente |
-| 2.5 | Seguridad | MEDIA | 9 funciones | Service role para todo |
+| 2.1 | Seguridad | CRÍTICA | `payment-webhook` | Sin verificación de firma |
+| 2.2 | Seguridad | MEDIA | `admin-dashboard` | Email admin hardcodeado |
+| 2.3 | Seguridad | MEDIA | `create-subscription` | Stack traces al cliente |
+| 2.4 | Seguridad | MEDIA | 9 funciones | Service role para todo |
 | 3.1 | Arquitectura | ALTA | Todos | Sin middleware compartido |
 | 3.2 | Código | BAJA | Varios | Nomenclatura inconsistente |
 | 3.3 | Arquitectura | ALTA | Webhooks | Dos webhooks duplicados |
@@ -533,16 +514,15 @@ Si el modelo no devuelve JSON válido (cosa que ocurre con frecuencia), la funci
 
 **Inmediato (bugs bloqueantes):**
 1. Corregir los 7 bugs de runtime (sección 1)
-2. Agregar verificación de firma a `payment-webhook` (2.2)
+2. Agregar verificación de firma a `payment-webhook` (2.1)
 
 **Corto plazo (1-2 sprints):**
 3. Unificar los dos webhooks de pago (3.3)
-4. Restringir CORS a orígenes conocidos (2.1)
-5. Eliminar stack traces de respuestas (2.4)
-6. Estandarizar formato de errores (4.1)
+4. Eliminar stack traces de respuestas (2.3)
+5. Estandarizar formato de errores (4.1)
 
 **Mediano plazo (refactoring):**
-7. Crear middleware compartido de auth/CORS (3.1)
-8. Optimizar queries N+1 (3.4)
-9. Paginar admin-dashboard (3.6)
-10. Separar service role de user client (2.5)
+6. Crear middleware compartido de auth (3.1)
+7. Optimizar queries N+1 (3.4)
+8. Paginar admin-dashboard (3.6)
+9. Separar service role de user client (2.4)
