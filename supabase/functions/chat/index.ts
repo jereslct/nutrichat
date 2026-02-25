@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { logTokenUsage } from "../_shared/tokenTracking.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -200,10 +201,10 @@ serve(async (req) => {
       .eq("diet_id", dietId)
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(6);
 
-    // Use diet_summary if available, otherwise fall back to full pdf_text
-    const dietContext = diet.diet_summary || diet.pdf_text;
+    // Use diet_summary if available, otherwise fall back to truncated pdf_text
+    const dietContext = diet.diet_summary || diet.pdf_text?.slice(0, 6000) || '';
 
     // Construir el contexto para la IA
     const systemPrompt = `Eres un asistente de nutrición personalizado. Tu rol es ayudar al usuario con cualquier consulta relacionada con nutrición, alimentación y hábitos alimentarios, utilizando su plan nutricional como base principal.
@@ -225,17 +226,31 @@ REGLAS:
 PLAN NUTRICIONAL DEL USUARIO:
 ${dietContext}`;
 
-    // Construir mensajes para la API
+    // Construir mensajes para la API con compresión por ventana deslizante:
+    // - Últimos 4 mensajes: completos
+    // - Mensajes más viejos: solo turno del usuario, truncado a 150 chars
     const contents = [];
-    
-    // Agregar historial reciente (invertido para orden cronológico)
+
     if (recentMessages && recentMessages.length > 0) {
-      recentMessages.reverse().forEach(msg => {
-        contents.push({
-          role: msg.role === "assistant" ? "model" : "user",
-          parts: [{ text: msg.content }]
-        });
+      const FULL_RECENT = 4;
+      const chronological = [...recentMessages].reverse();
+      const cutoff = chronological.length - FULL_RECENT;
+
+      chronological.forEach((msg, i) => {
+        if (i < cutoff) {
+          if (msg.role !== "user") return;
+          contents.push({
+            role: "user",
+            parts: [{ text: msg.content.slice(0, 150) }]
+          });
+        } else {
+          contents.push({
+            role: msg.role === "assistant" ? "model" : "user",
+            parts: [{ text: msg.content }]
+          });
+        }
       });
+
       contents.push({
         role: "user",
         parts: [{ text: sanitizedMessage }]
@@ -290,6 +305,8 @@ ${dietContext}`;
     }
 
     const aiData = await aiResponse.json();
+    await logTokenUsage(supabaseAdmin, userId, "chat", aiData);
+
     const assistantResponse = aiData.choices?.[0]?.message?.content;
     
     if (!assistantResponse) {
