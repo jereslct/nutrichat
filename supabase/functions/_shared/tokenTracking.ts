@@ -1,4 +1,4 @@
-import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 interface TokenUsage {
   prompt_tokens?: number;
