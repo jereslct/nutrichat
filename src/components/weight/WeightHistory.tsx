@@ -20,13 +20,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2, Scale } from "lucide-react";
 import { fromKg, formatWeight, type WeightUnit } from "@/lib/weightConversion";
-import type { Tables } from "@/integrations/supabase/types";
+import type { WeightEntry } from "@/hooks/useWeightData";
 import { WeightEntryForm } from "./WeightEntryForm";
 
 interface WeightHistoryProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  entries: Tables<"weight_entries">[];
+  entries: WeightEntry[];
   unit: WeightUnit;
   onUpdate: (params: { id: string; weight: number; notes?: string | null }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -51,7 +51,7 @@ export function WeightHistory({
   isUpdating,
   isDeleting,
 }: WeightHistoryProps) {
-  const [editEntry, setEditEntry] = useState<Tables<"weight_entries"> | null>(null);
+  const [editEntry, setEditEntry] = useState<WeightEntry | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleUpdate = async (data: { weight: number; entry_date: string; notes?: string }) => {

@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { fromKg, toKg, type WeightUnit } from "@/lib/weightConversion";
-import type { Tables } from "@/integrations/supabase/types";
+import type { WeightEntry } from "@/hooks/useWeightData";
 
 const entrySchema = z.object({
   weight: z.coerce
@@ -32,7 +32,7 @@ interface WeightEntryFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   unit: WeightUnit;
-  entry?: Tables<"weight_entries"> | null;
+  entry?: WeightEntry | null;
   onSubmit: (data: { weight: number; entry_date: string; notes?: string }) => Promise<void>;
   isPending: boolean;
 }

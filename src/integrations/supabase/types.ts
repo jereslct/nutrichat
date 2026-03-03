@@ -190,6 +190,7 @@ export type Database = {
           chat_count: number
           created_at: string | null
           full_name: string | null
+          height: number | null
           id: string
           is_premium: boolean
           licenses_count: number
@@ -198,13 +199,16 @@ export type Database = {
           specialty: string | null
           subscription_id: string | null
           subscription_status: string
+          target_weight: number | null
           updated_at: string | null
+          weight_unit: string | null
         }
         Insert: {
           avatar_url?: string | null
           chat_count?: number
           created_at?: string | null
           full_name?: string | null
+          height?: number | null
           id: string
           is_premium?: boolean
           licenses_count?: number
@@ -213,13 +217,16 @@ export type Database = {
           specialty?: string | null
           subscription_id?: string | null
           subscription_status?: string
+          target_weight?: number | null
           updated_at?: string | null
+          weight_unit?: string | null
         }
         Update: {
           avatar_url?: string | null
           chat_count?: number
           created_at?: string | null
           full_name?: string | null
+          height?: number | null
           id?: string
           is_premium?: boolean
           licenses_count?: number
@@ -228,7 +235,9 @@ export type Database = {
           specialty?: string | null
           subscription_id?: string | null
           subscription_status?: string
+          target_weight?: number | null
           updated_at?: string | null
+          weight_unit?: string | null
         }
         Relationships: []
       }
@@ -313,6 +322,36 @@ export type Database = {
           last_query_date?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      weight_entries: {
+        Row: {
+          created_at: string | null
+          entry_date: string
+          id: string
+          notes: string | null
+          updated_at: string | null
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string | null
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id: string
+          weight: number
+        }
+        Update: {
+          created_at?: string | null
+          entry_date?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weight?: number
         }
         Relationships: []
       }

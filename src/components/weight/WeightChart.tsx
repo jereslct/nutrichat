@@ -15,11 +15,11 @@ import {
 } from "@/components/ui/chart";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import type { Tables } from "@/integrations/supabase/types";
+import type { WeightEntry } from "@/hooks/useWeightData";
 import { fromKg, type WeightUnit } from "@/lib/weightConversion";
 
 interface WeightChartProps {
-  entries: Tables<"weight_entries">[];
+  entries: WeightEntry[];
   unit: WeightUnit;
   targetWeight?: number | null;
   height?: number;
