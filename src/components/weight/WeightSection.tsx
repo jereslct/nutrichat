@@ -70,7 +70,6 @@ export function WeightSection({ userId }: WeightSectionProps) {
         return;
       }
 
-      // Target weight stored in kg
       let targetInKg: number | null = null;
       if (targetRaw != null) {
         targetInKg = Number(toKg(targetRaw, settingsUnit).toFixed(2));

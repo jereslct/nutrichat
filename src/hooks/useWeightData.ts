@@ -1,10 +1,18 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
 import type { WeightUnit } from "@/lib/weightConversion";
 
-type WeightEntry = Tables<"weight_entries">;
+// Local type — weight_entries exists in DB but types.ts may lag behind
+export interface WeightEntry {
+  id: string;
+  user_id: string;
+  weight: number;
+  entry_date: string;
+  notes: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
 
 interface WeightProfile {
   height: number | null;
@@ -19,13 +27,13 @@ export function useWeightData(userId: string | undefined) {
     queryKey: ["weight_entries", userId],
     queryFn: async (): Promise<WeightEntry[]> => {
       if (!userId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("weight_entries")
         .select("*")
         .eq("user_id", userId)
         .order("entry_date", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as WeightEntry[];
     },
     enabled: !!userId,
   });
@@ -34,7 +42,7 @@ export function useWeightData(userId: string | undefined) {
     queryKey: ["weight_profile", userId],
     queryFn: async (): Promise<WeightProfile> => {
       if (!userId) return { height: null, target_weight: null, weight_unit: "kg" };
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("profiles")
         .select("height, target_weight, weight_unit")
         .eq("id", userId)
@@ -52,7 +60,7 @@ export function useWeightData(userId: string | undefined) {
   const addEntry = useMutation({
     mutationFn: async (entry: { weight: number; entry_date: string; notes?: string }) => {
       if (!userId) throw new Error("No user");
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("weight_entries")
         .insert({ user_id: userId, ...entry })
         .select()
@@ -68,7 +76,7 @@ export function useWeightData(userId: string | undefined) {
   const updateEntry = useMutation({
     mutationFn: async (params: { id: string; weight: number; notes?: string | null }) => {
       const { id, ...rest } = params;
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("weight_entries")
         .update(rest)
         .eq("id", id)
@@ -84,7 +92,7 @@ export function useWeightData(userId: string | undefined) {
 
   const deleteEntry = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("weight_entries")
         .delete()
         .eq("id", id);
@@ -98,7 +106,7 @@ export function useWeightData(userId: string | undefined) {
   const updateWeightSettings = useMutation({
     mutationFn: async (settings: Partial<WeightProfile>) => {
       if (!userId) throw new Error("No user");
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("profiles")
         .update(settings)
         .eq("id", userId);
@@ -154,13 +162,13 @@ export function usePatientWeightData(patientId: string | undefined) {
     queryKey: ["patient_weight_entries", patientId],
     queryFn: async (): Promise<WeightEntry[]> => {
       if (!patientId) return [];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("weight_entries")
         .select("*")
         .eq("user_id", patientId)
         .order("entry_date", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as WeightEntry[];
     },
     enabled: !!patientId,
   });
@@ -169,7 +177,7 @@ export function usePatientWeightData(patientId: string | undefined) {
     queryKey: ["patient_weight_profile", patientId],
     queryFn: async (): Promise<WeightProfile> => {
       if (!patientId) return { height: null, target_weight: null, weight_unit: "kg" };
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("profiles")
         .select("height, target_weight, weight_unit")
         .eq("id", patientId)
