@@ -24,6 +24,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AvatarCropDialog } from "@/components/AvatarCropDialog";
+import { WeightSection } from "@/components/weight/WeightSection";
 
 interface Diet {
   id: string;
@@ -529,6 +530,8 @@ const Profile = () => {
                   </div>
                 )}
               </Card>
+
+              {session?.user?.id && <WeightSection userId={session.user.id} />}
             </>
           )}
         </div>

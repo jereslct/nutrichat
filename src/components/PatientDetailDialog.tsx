@@ -31,6 +31,7 @@ import {
   Clock,
   Download,
 } from "lucide-react";
+import { PatientWeightCard } from "@/components/weight/PatientWeightCard";
 
 interface PatientSummary {
   resumen_general: string;
@@ -368,6 +369,9 @@ export const PatientDetailDialog = ({
                 </CardContent>
               </Card>
             )}
+
+            {/* Weight tracking */}
+            <PatientWeightCard patientId={patientId} />
 
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-2">
