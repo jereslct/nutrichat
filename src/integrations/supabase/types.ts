@@ -190,7 +190,6 @@ export type Database = {
           chat_count: number
           created_at: string | null
           full_name: string | null
-          height: number | null
           id: string
           is_premium: boolean
           licenses_count: number
@@ -199,16 +198,13 @@ export type Database = {
           specialty: string | null
           subscription_id: string | null
           subscription_status: string
-          target_weight: number | null
           updated_at: string | null
-          weight_unit: string
         }
         Insert: {
           avatar_url?: string | null
           chat_count?: number
           created_at?: string | null
           full_name?: string | null
-          height?: number | null
           id: string
           is_premium?: boolean
           licenses_count?: number
@@ -217,16 +213,13 @@ export type Database = {
           specialty?: string | null
           subscription_id?: string | null
           subscription_status?: string
-          target_weight?: number | null
           updated_at?: string | null
-          weight_unit?: string
         }
         Update: {
           avatar_url?: string | null
           chat_count?: number
           created_at?: string | null
           full_name?: string | null
-          height?: number | null
           id?: string
           is_premium?: boolean
           licenses_count?: number
@@ -235,9 +228,7 @@ export type Database = {
           specialty?: string | null
           subscription_id?: string | null
           subscription_status?: string
-          target_weight?: number | null
           updated_at?: string | null
-          weight_unit?: string
         }
         Relationships: []
       }
@@ -324,44 +315,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      weight_entries: {
-        Row: {
-          created_at: string | null
-          entry_date: string
-          id: string
-          notes: string | null
-          updated_at: string | null
-          user_id: string
-          weight: number
-        }
-        Insert: {
-          created_at?: string | null
-          entry_date?: string
-          id?: string
-          notes?: string | null
-          updated_at?: string | null
-          user_id: string
-          weight: number
-        }
-        Update: {
-          created_at?: string | null
-          entry_date?: string
-          id?: string
-          notes?: string | null
-          updated_at?: string | null
-          user_id?: string
-          weight?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "weight_entries_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {
